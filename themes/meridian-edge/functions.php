@@ -64,7 +64,7 @@ function me_preload_fonts( $resources ) {
 	$dir = get_stylesheet_directory_uri() . '/fonts';
 
 	$critical = array(
-		'space-grotesk-v22-latin-600.woff2',
+		'space-grotesk-v22-latin-700.woff2',
 		'ibm-plex-sans-v23-latin-regular.woff2',
 	);
 
@@ -115,10 +115,10 @@ function me_acf_json_load_point( $paths ) {
 add_filter( 'acf/settings/load_json', 'me_acf_json_load_point' );
 
 /**
- * Trim machine-readable WordPress tells out of the document head.
+ * Remove legacy <head> output the theme does not use.
  *
- * Bundles the generator string, shortlink, RSD/WLW discovery links and the
- * emoji loader into one pass; lighter markup also reads less templated.
+ * Drops the generator string, shortlink, RSD/WLW discovery links and the emoji
+ * loader in a single pass.
  *
  * @return void
  */
@@ -160,7 +160,12 @@ function me_structured_data() {
 	$description = me_meta_summary();
 	$is_article  = is_singular( 'post' );
 	$image       = ( $is_article && has_post_thumbnail() ) ? get_the_post_thumbnail_url( null, 'large' ) : '';
+	$canonical   = me_canonical_url();
 
+	// Core already prints rel=canonical on singular; only add it where it doesn't.
+	if ( ! is_singular() ) {
+		printf( '<link rel="canonical" href="%s">' . "\n", esc_url( $canonical ) );
+	}
 	printf( '<meta name="twitter:card" content="%s">' . "\n", $image ? 'summary_large_image' : 'summary' );
 	printf( '<meta name="twitter:title" content="%s">' . "\n", esc_attr( $title ) );
 
@@ -183,7 +188,10 @@ function me_structured_data() {
 				'@type' => 'Person',
 				'name'  => get_the_author(),
 			),
-			'mainEntityOfPage' => get_permalink(),
+			'mainEntityOfPage' => array(
+					'@type' => 'WebPage',
+					'@id'   => $canonical,
+				),
 		);
 
 		if ( '' !== $description ) {

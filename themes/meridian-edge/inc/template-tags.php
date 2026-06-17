@@ -36,6 +36,29 @@ function me_meta_summary() {
 }
 
 /**
+ * Resolve a clean canonical URL for the current view.
+ *
+ * Built from $wp->request (root-relative, so it is correct on subdirectory
+ * installs) and without query args, so tracking parameters never leak into the
+ * canonical / og:url.
+ *
+ * @return string
+ */
+function me_canonical_url() {
+	if ( is_singular() ) {
+		return (string) get_permalink();
+	}
+
+	if ( is_front_page() ) {
+		return home_url( '/' );
+	}
+
+	global $wp;
+
+	return home_url( user_trailingslashit( $wp->request ?? '' ) );
+}
+
+/**
  * Print the byline strip for a post: timestamp followed by its categories.
  *
  * @return void

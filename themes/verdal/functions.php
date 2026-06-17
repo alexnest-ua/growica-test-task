@@ -106,8 +106,8 @@ function verdal_acf_json_load_point( $paths ) {
 add_filter( 'acf/settings/load_json', 'verdal_acf_json_load_point' );
 
 /**
- * Strip WordPress fingerprints from <head> (generator/version, shortlink, RSD,
- * WLW, emoji). Reducing such machine-readable tells is part of de-footprinting.
+ * Tidy the document head: drop output the theme does not use (generator/version,
+ * shortlink, RSD and WLW discovery links, and the emoji loader).
  */
 function verdal_clean_head() {
 	remove_action( 'wp_head', 'wp_generator' );
@@ -131,6 +131,12 @@ function verdal_seo_meta() {
 	}
 
 	$description = verdal_meta_description();
+	$canonical   = verdal_canonical_url();
+
+	// Core already prints rel=canonical on singular; only add it where it doesn't.
+	if ( ! is_singular() ) {
+		printf( '<link rel="canonical" href="%s">' . "\n", esc_url( $canonical ) );
+	}
 
 	if ( $description ) {
 		printf( '<meta name="description" content="%s">' . "\n", esc_attr( $description ) );
@@ -144,7 +150,7 @@ function verdal_seo_meta() {
 	}
 
 	printf( '<meta property="og:type" content="%s">' . "\n", is_singular() ? 'article' : 'website' );
-	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( is_singular() ? get_permalink() : home_url( add_query_arg( array() ) ) ) );
+	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( $canonical ) );
 
 	if ( is_singular() && has_post_thumbnail() ) {
 		printf( '<meta property="og:image" content="%s">' . "\n", esc_url( get_the_post_thumbnail_url( null, 'large' ) ) );

@@ -184,8 +184,9 @@ img {
 
 .me-cta--solid .me-button:hover,
 .me-cta--solid .me-button:focus {
-	background-color: var(--me-accent);
-	border-color: var(--me-accent);
+	/* primary-strong (not accent): #fff on #16329b ~10.8:1, AA in the focus state. */
+	background-color: var(--me-primary-strong);
+	border-color: var(--me-primary-strong);
 	color: #ffffff;
 }
 
@@ -587,7 +588,8 @@ img {
 }
 
 .me-cta--solid .me-cta__kicker {
-	color: var(--me-accent);
+	/* lighter cobalt: ~7.4:1 on the dark panel (AA for normal text) */
+	color: #7ea2ff;
 }
 
 .me-cta--solid .me-cta__heading,

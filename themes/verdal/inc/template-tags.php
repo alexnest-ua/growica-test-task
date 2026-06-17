@@ -28,6 +28,24 @@ function verdal_meta_description() {
 }
 
 /**
+ * Canonical URL for the current request — query-string free, and correct on
+ * installs that live in a subdirectory.
+ *
+ * @return string
+ */
+function verdal_canonical_url() {
+	if ( is_singular() ) {
+		return (string) get_permalink();
+	}
+
+	if ( is_front_page() ) {
+		return home_url( '/' );
+	}
+
+	return home_url( user_trailingslashit( $GLOBALS['wp']->request ?? '' ) );
+}
+
+/**
  * Output the post meta line: published date + primary category.
  */
 function verdal_entry_meta() {
