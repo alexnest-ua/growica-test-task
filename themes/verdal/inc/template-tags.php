@@ -73,6 +73,88 @@ function verdal_entry_meta() {
 }
 
 /**
+ * True when the current page has any ACF "Page Intro" content to show.
+ *
+ * Used by page.php to decide between the full editorial hero and the standard
+ * entry header. Safe to call when ACF is inactive (returns false).
+ *
+ * @return bool
+ */
+function verdal_has_page_intro() {
+	if ( ! function_exists( 'get_field' ) ) {
+		return false;
+	}
+
+	$cta   = get_field( 'intro_cta' );
+	$image = get_field( 'intro_image' );
+
+	return (bool) (
+		get_field( 'intro_eyebrow' )
+		|| get_field( 'intro_lead' )
+		|| ( is_array( $cta ) && ! empty( $cta['url'] ) )
+		|| ( is_array( $image ) && ! empty( $image['url'] ) )
+	);
+}
+
+/**
+ * Render the full editorial front-page hero.
+ *
+ * Outputs a generous, airy hero built from the page title plus the ACF "Page
+ * Intro" fields: a tracked uppercase eyebrow, the page title as the single
+ * large H1, an elegant lead, a refined CTA, and a large feature image. Because
+ * this owns the page <h1>, page.php must skip template-parts/entry-header when
+ * it calls this. All output is escaped at the point of output and every ACF
+ * array is null-checked.
+ */
+function verdal_page_hero() {
+	$eyebrow = function_exists( 'get_field' ) ? get_field( 'intro_eyebrow' ) : '';
+	$lead    = function_exists( 'get_field' ) ? get_field( 'intro_lead' ) : '';
+	$cta     = function_exists( 'get_field' ) ? get_field( 'intro_cta' ) : null;
+	$image   = function_exists( 'get_field' ) ? get_field( 'intro_image' ) : null;
+
+	$has_image = is_array( $image ) && ! empty( $image['url'] );
+	$has_cta   = is_array( $cta ) && ! empty( $cta['url'] );
+	?>
+	<section class="verdal-hero" aria-label="<?php esc_attr_e( 'Introduction', 'verdal' ); ?>">
+		<div class="verdal-hero__inner">
+			<div class="verdal-hero__copy">
+				<?php if ( $eyebrow ) : ?>
+					<p class="verdal-eyebrow"><?php echo esc_html( $eyebrow ); ?></p>
+				<?php endif; ?>
+
+				<?php the_title( '<h1 class="verdal-hero__title">', '</h1>' ); ?>
+
+				<?php if ( $lead ) : ?>
+					<p class="verdal-hero__lead"><?php echo esc_html( $lead ); ?></p>
+				<?php endif; ?>
+
+				<?php if ( $has_cta ) : ?>
+					<p class="verdal-hero__actions">
+						<a class="verdal-button" href="<?php echo esc_url( $cta['url'] ); ?>"<?php echo ! empty( $cta['target'] ) ? ' target="' . esc_attr( $cta['target'] ) . '" rel="noopener"' : ''; ?>>
+							<?php echo esc_html( ! empty( $cta['title'] ) ? $cta['title'] : __( 'Learn more', 'verdal' ) ); ?>
+						</a>
+					</p>
+				<?php endif; ?>
+			</div>
+
+			<?php if ( $has_image ) : ?>
+				<figure class="verdal-hero__media">
+					<img
+						src="<?php echo esc_url( $image['url'] ); ?>"
+						alt="<?php echo esc_attr( $image['alt'] ?? '' ); ?>"
+						<?php if ( ! empty( $image['width'] ) ) : ?>width="<?php echo esc_attr( $image['width'] ); ?>"<?php endif; ?>
+						<?php if ( ! empty( $image['height'] ) ) : ?>height="<?php echo esc_attr( $image['height'] ); ?>"<?php endif; ?>
+						fetchpriority="high"
+						decoding="async"
+					/>
+				</figure>
+			<?php endif; ?>
+		</div>
+	</section>
+	<?php
+}
+
+/**
  * Render the ACF "Page Intro" block beneath the page title.
  *
  * Called directly from page.php so it does not depend on a GeneratePress hook
