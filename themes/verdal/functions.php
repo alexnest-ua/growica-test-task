@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'VERDAL_VERSION', '1.2.0' );
+define( 'VERDAL_VERSION', '1.2.1' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
