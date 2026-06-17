@@ -159,23 +159,23 @@ function me_structured_data() {
 	$title       = wp_get_document_title();
 	$description = me_meta_summary();
 	$is_article  = is_singular( 'post' );
-	$image       = ( $is_article && has_post_thumbnail() ) ? get_the_post_thumbnail_url( null, 'large' ) : '';
+	$image       = ( $is_article && has_post_thumbnail() )
+		? get_the_post_thumbnail_url( null, 'large' )
+		: get_stylesheet_directory_uri() . '/assets/og-image.png';
 	$canonical   = me_canonical_url();
 
 	// Core already prints rel=canonical on singular; only add it where it doesn't.
 	if ( ! is_singular() ) {
 		printf( '<link rel="canonical" href="%s">' . "\n", esc_url( $canonical ) );
 	}
-	printf( '<meta name="twitter:card" content="%s">' . "\n", $image ? 'summary_large_image' : 'summary' );
+	printf( '<meta name="twitter:card" content="%s">' . "\n", 'summary_large_image' );
 	printf( '<meta name="twitter:title" content="%s">' . "\n", esc_attr( $title ) );
 
 	if ( '' !== $description ) {
 		printf( '<meta name="twitter:description" content="%s">' . "\n", esc_attr( $description ) );
 	}
 
-	if ( '' !== $image ) {
-		printf( '<meta name="twitter:image" content="%s">' . "\n", esc_url( $image ) );
-	}
+	printf( '<meta name="twitter:image" content="%s">' . "\n", esc_url( $image ) );
 
 	if ( $is_article ) {
 		$schema = array(
@@ -220,6 +220,20 @@ function me_structured_data() {
 	);
 }
 add_action( 'wp_head', 'me_structured_data', 5 );
+
+/**
+ * Point browsers at the theme's icons when the site has no Site Icon of its own.
+ */
+function me_site_icons() {
+	if ( function_exists( 'has_site_icon' ) && has_site_icon() ) {
+		return;
+	}
+
+	$icons = get_stylesheet_directory_uri() . '/assets';
+	printf( '<link rel="icon" href="%s/favicon.svg" type="image/svg+xml">' . "\n", esc_url( $icons ) );
+	printf( '<link rel="apple-touch-icon" href="%s/apple-touch-icon.png">' . "\n", esc_url( $icons ) );
+}
+add_action( 'wp_head', 'me_site_icons' );
 
 /**
  * Print the dark four-column footer with a split utility bar.

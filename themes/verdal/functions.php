@@ -152,11 +152,27 @@ function verdal_seo_meta() {
 	printf( '<meta property="og:type" content="%s">' . "\n", is_singular() ? 'article' : 'website' );
 	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( $canonical ) );
 
-	if ( is_singular() && has_post_thumbnail() ) {
-		printf( '<meta property="og:image" content="%s">' . "\n", esc_url( get_the_post_thumbnail_url( null, 'large' ) ) );
-	}
+	$og_image = ( is_singular() && has_post_thumbnail() )
+		? get_the_post_thumbnail_url( null, 'large' )
+		: get_stylesheet_directory_uri() . '/assets/og-image.png';
+	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $og_image ) );
 }
 add_action( 'wp_head', 'verdal_seo_meta', 1 );
+
+/**
+ * Output favicon links, unless the site already defines a Site Icon (which then
+ * takes precedence).
+ */
+function verdal_favicon() {
+	if ( function_exists( 'has_site_icon' ) && has_site_icon() ) {
+		return;
+	}
+
+	$assets = get_stylesheet_directory_uri() . '/assets';
+	printf( '<link rel="icon" href="%s/favicon.svg" type="image/svg+xml">' . "\n", esc_url( $assets ) );
+	printf( '<link rel="apple-touch-icon" href="%s/apple-touch-icon.png">' . "\n", esc_url( $assets ) );
+}
+add_action( 'wp_head', 'verdal_favicon' );
 
 /**
  * Replace GeneratePress' default footer with a three-column layout and a centred
