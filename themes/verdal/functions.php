@@ -154,7 +154,7 @@ function verdal_seo_meta() {
 
 	$og_image = ( is_singular() && has_post_thumbnail() )
 		? get_the_post_thumbnail_url( null, 'large' )
-		: get_stylesheet_directory_uri() . '/assets/og-image.png';
+		: get_stylesheet_directory_uri() . '/assets/og-image.webp';
 	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $og_image ) );
 }
 add_action( 'wp_head', 'verdal_seo_meta', 1 );

@@ -161,7 +161,7 @@ function me_structured_data() {
 	$is_article  = is_singular( 'post' );
 	$image       = ( $is_article && has_post_thumbnail() )
 		? get_the_post_thumbnail_url( null, 'large' )
-		: get_stylesheet_directory_uri() . '/assets/og-image.png';
+		: get_stylesheet_directory_uri() . '/assets/og-image.webp';
 	$canonical   = me_canonical_url();
 
 	// Core already prints rel=canonical on singular; only add it where it doesn't.
