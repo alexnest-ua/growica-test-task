@@ -93,6 +93,29 @@ function verdal_layout() {
 add_filter( 'generate_sidebar_layout', 'verdal_layout' );
 
 /**
+ * Render the editorial hero above the content container.
+ *
+ * GeneratePress makes #content a flex row, so a hero echoed from inside the page
+ * template lands beside the content column. Hooking generate_after_header
+ * outputs it above #content instead, at full width. The main loop is spun once
+ * (then rewound) so the_title() and the ACF fields resolve for the queried page.
+ */
+function verdal_render_page_hero() {
+	if ( ! is_singular() || ! have_posts() ) {
+		return;
+	}
+
+	the_post();
+
+	if ( is_front_page() || verdal_has_page_intro() ) {
+		verdal_page_hero();
+	}
+
+	rewind_posts();
+}
+add_action( 'generate_after_header', 'verdal_render_page_hero' );
+
+/**
  * Load ACF field groups from the theme's acf-json directory so the custom field
  * group is reproducible from the repository (not click-only in the DB).
  *

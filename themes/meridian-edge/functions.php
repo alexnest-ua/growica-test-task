@@ -102,6 +102,25 @@ function me_sidebar_layout() {
 add_filter( 'generate_sidebar_layout', 'me_sidebar_layout' );
 
 /**
+ * Render the product hero above the content container.
+ *
+ * GeneratePress makes #content a flex row, so a hero echoed from the template
+ * sits beside the content column. Hooking generate_after_header places it above
+ * #content at full width. The loop is spun once (then rewound) so the_title()
+ * and the_excerpt() resolve for the front page.
+ */
+function meridian_edge_render_page_hero() {
+	if ( ! is_front_page() || ! have_posts() ) {
+		return;
+	}
+
+	the_post();
+	meridian_edge_page_hero();
+	rewind_posts();
+}
+add_action( 'generate_after_header', 'meridian_edge_render_page_hero' );
+
+/**
  * Add the theme's acf-json folder to ACF's load points so the CTA field group
  * lives in version control rather than only in the database.
  *

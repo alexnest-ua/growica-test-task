@@ -13,15 +13,9 @@ get_header();
 
 $me_is_front = is_front_page();
 
-// Front page leads with a full-width product hero (its own single H1) before
-// the measured content column. Every other page keeps the standard layout.
-if ( $me_is_front ) {
-	while ( have_posts() ) {
-		the_post();
-		meridian_edge_page_hero();
-	}
-	rewind_posts();
-}
+// The front-page hero is rendered above #content from generate_after_header
+// (see functions.php) so it spans full width; here we only skip the duplicate
+// entry-header on the front page.
 ?>
 <div id="primary" class="content-area">
 	<main id="main" class="site-main me-main">
