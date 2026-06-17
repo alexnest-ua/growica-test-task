@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'VERDAL_VERSION', '1.1.0' );
+define( 'VERDAL_VERSION', '1.2.0' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
@@ -52,6 +52,25 @@ function verdal_assets() {
 add_action( 'wp_enqueue_scripts', 'verdal_assets', 20 );
 
 /**
+ * Trim WordPress core block CSS that this theme does not use.
+ *
+ * Core inlines the full block-library sheet plus the theme.json preset sheet
+ * (colours, gradients, spacing utilities) into every page head. Verdal styles
+ * its own prose with its own design tokens and never references those presets,
+ * so the markup is dead weight in the document head — dequeue it. The skip-link
+ * and screen-reader-text rules live in main.css, so accessibility never depends
+ * on the sheets removed here.
+ */
+function verdal_trim_block_styles() {
+	wp_dequeue_style( 'global-styles' );
+	wp_dequeue_style( 'global-styles-css-custom-properties' );
+	wp_dequeue_style( 'classic-theme-styles' );
+	wp_dequeue_style( 'wp-block-library' );
+	wp_dequeue_style( 'wp-block-library-theme' );
+}
+add_action( 'wp_enqueue_scripts', 'verdal_trim_block_styles', 100 );
+
+/**
  * Preload the two above-the-fold font files (heading + body) to protect LCP/CLS.
  *
  * @param array $preloads Existing preload definitions.
@@ -59,7 +78,7 @@ add_action( 'wp_enqueue_scripts', 'verdal_assets', 20 );
  */
 function verdal_preload_fonts( $preloads ) {
 	$fonts = get_stylesheet_directory_uri() . '/fonts';
-	foreach ( array( 'lora-v37-latin-600.woff2', 'mulish-v18-latin-regular.woff2' ) as $file ) {
+	foreach ( array( 'lora-v37-latin-700.woff2', 'mulish-v18-latin-regular.woff2' ) as $file ) {
 		$preloads[] = array(
 			'href'        => "{$fonts}/{$file}",
 			'as'          => 'font',
@@ -101,7 +120,7 @@ add_filter( 'generate_sidebar_layout', 'verdal_layout' );
  * (then rewound) so the_title() and the ACF fields resolve for the queried page.
  */
 function verdal_render_page_hero() {
-	if ( ! is_singular() || ! have_posts() ) {
+	if ( ! is_page() || ! have_posts() ) {
 		return;
 	}
 
@@ -156,7 +175,7 @@ function verdal_seo_meta() {
 	$description = verdal_meta_description();
 	$canonical   = verdal_canonical_url();
 
-	// Core already prints rel=canonical on singular; only add it where it doesn't.
+	// WordPress prints rel=canonical for singular views itself; supply it elsewhere.
 	if ( ! is_singular() ) {
 		printf( '<link rel="canonical" href="%s">' . "\n", esc_url( $canonical ) );
 	}
@@ -175,9 +194,13 @@ function verdal_seo_meta() {
 	printf( '<meta property="og:type" content="%s">' . "\n", is_singular() ? 'article' : 'website' );
 	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( $canonical ) );
 
-	$og_image = ( is_singular() && has_post_thumbnail() )
-		? get_the_post_thumbnail_url( null, 'large' )
-		: get_stylesheet_directory_uri() . '/assets/og-image.webp';
+	$og_image = '';
+	if ( is_singular() && has_post_thumbnail() ) {
+		$og_image = get_the_post_thumbnail_url( null, 'large' );
+	}
+	if ( ! $og_image ) {
+		$og_image = get_stylesheet_directory_uri() . '/assets/og-image.webp';
+	}
 	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $og_image ) );
 }
 add_action( 'wp_head', 'verdal_seo_meta', 1 );

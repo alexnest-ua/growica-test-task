@@ -791,3 +791,44 @@ img {
 		transform: none;
 	}
 }
+
+/* ==========================================================================
+   Search form (404 + empty results)
+   ========================================================================== */
+.search-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--vd-space-1);
+	margin-block: var(--vd-space-3);
+}
+
+.search-form .search-field {
+	flex: 1 1 16rem;
+	min-height: 2.75rem;
+	padding: 0.5rem 0.9rem;
+	border: 1px solid var(--vd-line);
+	border-radius: var(--vd-radius);
+	background-color: var(--vd-surface);
+	color: var(--vd-ink);
+	font-family: inherit;
+	font-size: 1rem;
+}
+
+.search-form .search-submit {
+	min-height: 2.75rem;
+	padding: 0.5rem 1.4rem;
+	border: 1px solid var(--vd-primary);
+	border-radius: var(--vd-radius);
+	background-color: var(--vd-primary);
+	color: var(--vd-surface);
+	font-family: var(--vd-font-body);
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background-color 200ms var(--vd-ease);
+}
+
+.search-form .search-submit:hover,
+.search-form .search-submit:focus {
+	background-color: var(--vd-primary-strong);
+	border-color: var(--vd-primary-strong);
+}
