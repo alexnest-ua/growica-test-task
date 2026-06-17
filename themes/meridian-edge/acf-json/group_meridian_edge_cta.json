@@ -1,0 +1,143 @@
+{
+	"key": "group_meridian_edge_cta",
+	"title": "Post CTA Banner (Meridian Edge)",
+	"fields": [
+		{
+			"key": "field_me_cta_enabled",
+			"label": "Show CTA banner",
+			"name": "cta_enabled",
+			"aria-label": "",
+			"type": "true_false",
+			"instructions": "Render a call-to-action banner after this post's content.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"message": "Show the call-to-action banner",
+			"default_value": 0,
+			"ui": 1,
+			"ui_on_text": "On",
+			"ui_off_text": "Off"
+		},
+		{
+			"key": "field_me_cta_kicker",
+			"label": "Kicker",
+			"name": "cta_kicker",
+			"aria-label": "",
+			"type": "text",
+			"instructions": "Small uppercase label above the heading.",
+			"required": 0,
+			"conditional_logic": [
+				[
+					{ "field": "field_me_cta_enabled", "operator": "==", "value": "1" }
+				]
+			],
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"default_value": "",
+			"maxlength": 40,
+			"placeholder": "",
+			"prepend": "",
+			"append": ""
+		},
+		{
+			"key": "field_me_cta_heading",
+			"label": "Heading",
+			"name": "cta_heading",
+			"aria-label": "",
+			"type": "text",
+			"instructions": "",
+			"required": 0,
+			"conditional_logic": [
+				[
+					{ "field": "field_me_cta_enabled", "operator": "==", "value": "1" }
+				]
+			],
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"default_value": "",
+			"maxlength": "",
+			"placeholder": "",
+			"prepend": "",
+			"append": ""
+		},
+		{
+			"key": "field_me_cta_text",
+			"label": "Supporting text",
+			"name": "cta_text",
+			"aria-label": "",
+			"type": "textarea",
+			"instructions": "",
+			"required": 0,
+			"conditional_logic": [
+				[
+					{ "field": "field_me_cta_enabled", "operator": "==", "value": "1" }
+				]
+			],
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"default_value": "",
+			"maxlength": "",
+			"rows": 3,
+			"placeholder": "",
+			"new_lines": ""
+		},
+		{
+			"key": "field_me_cta_button",
+			"label": "Button",
+			"name": "cta_button",
+			"aria-label": "",
+			"type": "link",
+			"instructions": "",
+			"required": 0,
+			"conditional_logic": [
+				[
+					{ "field": "field_me_cta_enabled", "operator": "==", "value": "1" }
+				]
+			],
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"return_format": "array"
+		},
+		{
+			"key": "field_me_cta_variant",
+			"label": "Style variant",
+			"name": "cta_variant",
+			"aria-label": "",
+			"type": "select",
+			"instructions": "Dark solid panel or light outlined panel.",
+			"required": 0,
+			"conditional_logic": [
+				[
+					{ "field": "field_me_cta_enabled", "operator": "==", "value": "1" }
+				]
+			],
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"choices": {
+				"outline": "Outline (light)",
+				"solid": "Solid (dark)"
+			},
+			"default_value": "outline",
+			"return_format": "value",
+			"multiple": 0,
+			"allow_null": 0,
+			"ui": 0,
+			"ajax": 0,
+			"placeholder": ""
+		}
+	],
+	"location": [
+		[
+			{
+				"param": "post_type",
+				"operator": "==",
+				"value": "post"
+			}
+		]
+	],
+	"menu_order": 0,
+	"position": "side",
+	"style": "default",
+	"label_placement": "top",
+	"instruction_placement": "label",
+	"hide_on_screen": "",
+	"active": true,
+	"description": "Conditional call-to-action banner for single posts in the Meridian Edge theme: toggle, kicker, heading, text, button and a style variant.",
+	"show_in_rest": 0,
+	"modified": 1718200100
+}
