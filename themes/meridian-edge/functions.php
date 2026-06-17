@@ -1,25 +1,29 @@
 <?php
 /**
- * Meridian Edge child theme functions.
+ * Meridian Edge — theme bootstrap.
  *
- * A sharp, high-contrast GeneratePress child theme for product and engineering
- * sites. The split header, dark four-column footer and post call-to-action
- * banner are all defined in code so the theme rebuilds from the repository
- * alone, with nothing relying on Customizer values held in the database.
+ * Wires up the child theme entirely from code: asset loading, the split header
+ * placement, the dark footer, head cleanup and structured-data output. Keeping
+ * all of it here means a clean checkout reproduces the site without leaning on
+ * any Customizer state saved in the database.
  *
  * @package Meridian_Edge
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // No direct access.
+	exit;
 }
 
-define( 'MERIDIAN_EDGE_VERSION', '2.1.0' );
+define( 'ME_VERSION', '2.2.0' );
+
+require get_stylesheet_directory() . '/inc/template-tags.php';
 
 /**
- * Theme setup: translations + a footer menu location.
+ * Register translations, the footer menu slot and the card crop size.
+ *
+ * @return void
  */
-function meridian_edge_setup() {
+function me_after_setup_theme() {
 	load_child_theme_textdomain( 'meridian-edge', get_stylesheet_directory() . '/languages' );
 
 	register_nav_menus(
@@ -27,132 +31,194 @@ function meridian_edge_setup() {
 			'footer-menu' => __( 'Footer Menu', 'meridian-edge' ),
 		)
 	);
+
+	add_image_size( 'me-card', 760, 480, true );
 }
-add_action( 'after_setup_theme', 'meridian_edge_setup' );
+add_action( 'after_setup_theme', 'me_after_setup_theme' );
 
 /**
- * Enqueue fonts and the child stylesheet.
+ * Enqueue the compiled stylesheet and the deferred enhancement script.
  *
- * The child stylesheet depends on GeneratePress' "generate-style" handle so it
- * always loads after the parent CSS.
+ * The stylesheet is chained behind GeneratePress' "generate-style" handle so it
+ * always wins the cascade. SCRIPT_DEBUG swaps the readable sources in for the
+ * minified files; fonts are self-hosted through @font-face in main.css.
+ *
+ * @return void
  */
-function meridian_edge_enqueue_assets() {
-	wp_enqueue_style(
-		'meridian-edge-fonts',
-		'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap',
-		array(),
-		MERIDIAN_EDGE_VERSION
-	);
+function me_enqueue_assets() {
+	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+	$base   = get_stylesheet_directory_uri();
 
-	wp_enqueue_style(
-		'meridian-edge-style',
-		get_stylesheet_uri(),
-		array( 'generate-style' ),
-		MERIDIAN_EDGE_VERSION
-	);
+	wp_enqueue_style( 'meridian-edge', "{$base}/css/main{$suffix}.css", array( 'generate-style' ), ME_VERSION );
+	wp_enqueue_script( 'meridian-edge', "{$base}/js/theme{$suffix}.js", array(), ME_VERSION, true );
 }
-add_action( 'wp_enqueue_scripts', 'meridian_edge_enqueue_assets', 20 );
+add_action( 'wp_enqueue_scripts', 'me_enqueue_assets', 20 );
 
 /**
- * Preconnect to the Google Fonts hosts.
+ * Preload the heading + body faces used above the fold to steady LCP and CLS.
  *
- * @param array  $hints    URLs / hint arrays to print.
- * @param string $relation The relation type being filtered.
+ * @param array $resources Queued preload entries.
  * @return array
  */
-function meridian_edge_resource_hints( $hints, $relation ) {
-	if ( 'preconnect' === $relation ) {
-		$hints[] = 'https://fonts.googleapis.com';
-		$hints[] = array(
-			'href'        => 'https://fonts.gstatic.com',
+function me_preload_fonts( $resources ) {
+	$dir = get_stylesheet_directory_uri() . '/fonts';
+
+	$critical = array(
+		'space-grotesk-v22-latin-600.woff2',
+		'ibm-plex-sans-v23-latin-regular.woff2',
+	);
+
+	foreach ( $critical as $face ) {
+		$resources[] = array(
+			'href'        => "{$dir}/{$face}",
+			'as'          => 'font',
+			'type'        => 'font/woff2',
 			'crossorigin' => 'anonymous',
 		);
 	}
-	return $hints;
+
+	return $resources;
 }
-add_filter( 'wp_resource_hints', 'meridian_edge_resource_hints', 10, 2 );
+add_filter( 'wp_preload_resources', 'me_preload_fonts' );
 
 /**
- * Float the primary navigation to the right, beside a left-aligned logo.
+ * Pin the primary menu to the right of the logo as a single header row.
  *
  * @return string
  */
-function meridian_edge_navigation_location() {
+function me_navigation_location() {
 	return 'nav-float-right';
 }
-add_filter( 'generate_navigation_location', 'meridian_edge_navigation_location' );
+add_filter( 'generate_navigation_location', 'me_navigation_location' );
 
 /**
- * Register the theme's acf-json directory as an ACF load point so the field
- * group ships in the repository rather than living only in the database.
+ * Drop the GeneratePress sidebar so content runs full measure.
  *
- * @param array $paths Existing JSON load paths.
+ * @return string
+ */
+function me_sidebar_layout() {
+	return 'no-sidebar';
+}
+add_filter( 'generate_sidebar_layout', 'me_sidebar_layout' );
+
+/**
+ * Add the theme's acf-json folder to ACF's load points so the CTA field group
+ * lives in version control rather than only in the database.
+ *
+ * @param array $paths Registered load paths.
  * @return array
  */
-function meridian_edge_acf_json_load_point( $paths ) {
+function me_acf_json_load_point( $paths ) {
 	$paths[] = get_stylesheet_directory() . '/acf-json';
 	return $paths;
 }
-add_filter( 'acf/settings/load_json', 'meridian_edge_acf_json_load_point' );
+add_filter( 'acf/settings/load_json', 'me_acf_json_load_point' );
 
 /**
- * Render the ACF call-to-action banner after the content on single posts.
+ * Trim machine-readable WordPress tells out of the document head.
  *
- * Every value is escaped at output. The "variant" select switches between a
- * dark solid panel and a light outlined panel.
+ * Bundles the generator string, shortlink, RSD/WLW discovery links and the
+ * emoji loader into one pass; lighter markup also reads less templated.
+ *
+ * @return void
  */
-function meridian_edge_render_cta() {
-	if ( ! is_singular( 'post' ) || ! function_exists( 'get_field' ) ) {
-		return;
+function me_trim_head() {
+	$head_actions = array(
+		'wp_head' => array(
+			'wp_generator'         => 10,
+			'wp_shortlink_wp_head' => 10,
+			'rsd_link'             => 10,
+			'wlwmanifest_link'     => 10,
+			'print_emoji_detection_script' => 7,
+		),
+	);
+
+	foreach ( $head_actions['wp_head'] as $callback => $priority ) {
+		remove_action( 'wp_head', $callback, $priority );
 	}
 
-	if ( ! get_field( 'cta_enabled' ) ) {
-		return;
-	}
-
-	$kicker  = get_field( 'cta_kicker' );
-	$heading = get_field( 'cta_heading' );
-	$text    = get_field( 'cta_text' );
-	$button  = get_field( 'cta_button' );
-	$variant = get_field( 'cta_variant' );
-	$variant = in_array( $variant, array( 'solid', 'outline' ), true ) ? $variant : 'outline';
-
-	if ( ! $heading && ! $text && empty( $button ) ) {
-		return;
-	}
-	?>
-	<aside class="me-cta me-cta--<?php echo esc_attr( $variant ); ?>" aria-label="<?php esc_attr_e( 'Call to action', 'meridian-edge' ); ?>">
-		<div class="me-cta__body">
-			<?php if ( $kicker ) : ?>
-				<p class="me-cta__kicker"><?php echo esc_html( $kicker ); ?></p>
-			<?php endif; ?>
-
-			<?php if ( $heading ) : ?>
-				<h2 class="me-cta__heading"><?php echo esc_html( $heading ); ?></h2>
-			<?php endif; ?>
-
-			<?php if ( $text ) : ?>
-				<p class="me-cta__text"><?php echo esc_html( $text ); ?></p>
-			<?php endif; ?>
-		</div>
-
-		<?php if ( ! empty( $button['url'] ) ) : ?>
-			<p class="me-cta__action">
-				<a class="me-button" href="<?php echo esc_url( $button['url'] ); ?>"<?php echo ! empty( $button['target'] ) ? ' target="' . esc_attr( $button['target'] ) . '" rel="noopener"' : ''; ?>>
-					<?php echo esc_html( ! empty( $button['title'] ) ? $button['title'] : __( 'Get started', 'meridian-edge' ) ); ?>
-				</a>
-			</p>
-		<?php endif; ?>
-	</aside>
-	<?php
+	remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	add_filter( 'the_generator', '__return_empty_string' );
 }
-add_action( 'generate_after_content', 'meridian_edge_render_cta' );
+add_action( 'init', 'me_trim_head' );
 
 /**
- * Replace GeneratePress' default footer with a dark four-column layout and a
- * split bottom bar (copyright left, back-to-top right).
+ * Emit Twitter Card meta plus a schema.org JSON-LD node.
+ *
+ * Single posts describe themselves as an Article; everything else as the
+ * WebSite. Bows out when a dedicated SEO plugin owns the head to avoid
+ * duplicate tags.
+ *
+ * @return void
  */
-function meridian_edge_footer() {
+function me_structured_data() {
+	if ( defined( 'AIOSEO_VERSION' ) || defined( 'WPSEO_VERSION' ) || defined( 'RANK_MATH_VERSION' ) ) {
+		return;
+	}
+
+	$title       = wp_get_document_title();
+	$description = me_meta_summary();
+	$is_article  = is_singular( 'post' );
+	$image       = ( $is_article && has_post_thumbnail() ) ? get_the_post_thumbnail_url( null, 'large' ) : '';
+
+	printf( '<meta name="twitter:card" content="%s">' . "\n", $image ? 'summary_large_image' : 'summary' );
+	printf( '<meta name="twitter:title" content="%s">' . "\n", esc_attr( $title ) );
+
+	if ( '' !== $description ) {
+		printf( '<meta name="twitter:description" content="%s">' . "\n", esc_attr( $description ) );
+	}
+
+	if ( '' !== $image ) {
+		printf( '<meta name="twitter:image" content="%s">' . "\n", esc_url( $image ) );
+	}
+
+	if ( $is_article ) {
+		$schema = array(
+			'@context'      => 'https://schema.org',
+			'@type'         => 'Article',
+			'headline'      => $title,
+			'datePublished' => get_the_date( DATE_W3C ),
+			'dateModified'  => get_the_modified_date( DATE_W3C ),
+			'author'        => array(
+				'@type' => 'Person',
+				'name'  => get_the_author(),
+			),
+			'mainEntityOfPage' => get_permalink(),
+		);
+
+		if ( '' !== $description ) {
+			$schema['description'] = $description;
+		}
+
+		if ( '' !== $image ) {
+			$schema['image'] = $image;
+		}
+	} else {
+		$schema = array(
+			'@context' => 'https://schema.org',
+			'@type'    => 'WebSite',
+			'name'     => get_bloginfo( 'name' ),
+			'url'      => home_url( '/' ),
+		);
+
+		if ( '' !== $description ) {
+			$schema['description'] = $description;
+		}
+	}
+
+	printf(
+		'<script type="application/ld+json">%s</script>' . "\n",
+		wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP )
+	);
+}
+add_action( 'wp_head', 'me_structured_data', 5 );
+
+/**
+ * Print the dark four-column footer with a split utility bar.
+ *
+ * @return void
+ */
+function me_footer() {
 	?>
 	<footer class="me-footer" aria-label="<?php esc_attr_e( 'Site footer', 'meridian-edge' ); ?>">
 		<div class="grid-container me-footer__grid">
@@ -209,18 +275,19 @@ function meridian_edge_footer() {
 	</footer>
 	<?php
 }
-add_action( 'generate_footer', 'meridian_edge_footer' );
+add_action( 'generate_footer', 'me_footer' );
 
 /**
- * Remove GeneratePress' default footer widgets and site-info credit so only the
- * custom footer renders.
+ * Unhook the stock GeneratePress footer pieces so only ours renders.
  *
- * Deferred to after_setup_theme: the parent registers these callbacks while its
- * functions.php loads, which happens *after* the child's, so removing them at
- * child parse time would be a no-op.
+ * The parent theme attaches these callbacks while its own functions.php runs,
+ * which is after this child file is parsed — so the removal has to wait until
+ * after_setup_theme to land on registered hooks.
+ *
+ * @return void
  */
-function meridian_edge_replace_footer_hooks() {
+function me_unhook_default_footer() {
 	remove_action( 'generate_footer', 'generate_construct_footer_widgets', 5 );
 	remove_action( 'generate_footer', 'generate_construct_footer', 10 );
 }
-add_action( 'after_setup_theme', 'meridian_edge_replace_footer_hooks' );
+add_action( 'after_setup_theme', 'me_unhook_default_footer' );
