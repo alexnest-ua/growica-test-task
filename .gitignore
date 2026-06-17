@@ -1,0 +1,29 @@
+# --- OS / editor noise ---
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# --- Logs / temp ---
+*.log
+*.tmp
+
+# --- Secrets & local-only config (never commit creds/host logins) ---
+.env
+.env.*
+*.local
+auth.json
+wp-config.php
+wp-config-*.php
+*.sql
+*.sql.gz
+
+# --- Build artifacts (theme zips are generated on demand) ---
+/dist/
+node_modules/
+
+# --- Assignment brief: kept locally, not republished to the public repo ---
+/Тестове завдання*.pdf
+/Тестове завдання*.md
