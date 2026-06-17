@@ -54,6 +54,7 @@
 	--me-primary-strong: #16329b;
 	--me-accent: #3c6bff;
 	--me-line: #e2e6f0;
+	--me-line-strong: #cdd4e6;
 
 	--me-footer-bg: #14161f;
 	--me-footer-ink: #c9cedb;
@@ -65,15 +66,30 @@
 	--me-text: 1.0625rem;
 	--me-leading: 1.65;
 
+	/* fluid display steps — oversized, tight, confident */
+	--me-d1: clamp(2.5rem, 6.5vw, 5rem);
+	--me-d2: clamp(2rem, 4vw, 3rem);
+	--me-d3: clamp(1.6rem, 2.6vw, 2.25rem);
+	--me-track-display: -0.02em;
+
 	--me-s1: 0.5rem;
 	--me-s2: 1rem;
 	--me-s3: 1.5rem;
 	--me-s4: 2.5rem;
 	--me-s5: 4rem;
+	--me-s6: 6rem;
 	--me-radius: 0.25rem;
+	--me-radius-pill: 999px;
 	--me-measure: 46rem;
 	--me-wide: 64rem;
 	--me-ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+	/* refined depth — soft, low-opacity, no glow */
+	--me-shadow-1: 0 1px 2px rgba(20, 22, 31, 0.05), 0 1px 3px rgba(20, 22, 31, 0.06);
+	--me-shadow-2: 0 6px 16px -8px rgba(20, 22, 31, 0.22), 0 2px 6px -3px rgba(20, 22, 31, 0.12);
+
+	/* signature cobalt→ink wash for the hero/footer accents */
+	--me-gradient-ink: linear-gradient(135deg, var(--me-primary-strong) 0%, var(--me-ink) 62%);
 }
 
 /* base */
@@ -91,8 +107,18 @@ h1, h2, h3, h4, h5, h6,
 	font-family: var(--me-font-heading);
 	color: var(--me-ink);
 	font-weight: 700;
+	letter-spacing: var(--me-track-display);
+	line-height: 1.1;
+	text-wrap: balance;
+}
+
+h4, h5, h6 {
 	letter-spacing: -0.01em;
-	line-height: 1.15;
+	line-height: 1.2;
+}
+
+p {
+	text-wrap: pretty;
 }
 
 a {
@@ -144,16 +170,17 @@ img {
 	align-items: center;
 	justify-content: center;
 	min-height: 2.75rem;
-	padding: 0.6rem 1.4rem;
+	padding: 0.65rem 1.5rem;
 	background-color: var(--me-primary);
 	color: #ffffff;
 	font-family: var(--me-font-heading);
 	font-weight: 600;
+	font-size: 1rem;
 	letter-spacing: 0.01em;
 	border: 2px solid var(--me-primary);
 	border-radius: var(--me-radius);
 	text-decoration: none;
-	transition: background-color 180ms var(--me-ease), color 180ms var(--me-ease), border-color 180ms var(--me-ease);
+	transition: background-color 180ms var(--me-ease), color 180ms var(--me-ease), border-color 180ms var(--me-ease), transform 180ms var(--me-ease), box-shadow 180ms var(--me-ease);
 }
 
 .me-button:hover,
@@ -164,15 +191,37 @@ img {
 	color: #ffffff;
 }
 
+/* larger, weightier action for the hero pair */
+.me-button--lg {
+	min-height: 3.25rem;
+	padding: 0.85rem 1.9rem;
+	font-size: 1.0625rem;
+}
+
 .me-button--outline {
 	background-color: transparent;
 	color: var(--me-primary);
+	border-color: var(--me-line-strong);
 }
 
 .me-button--outline:hover,
 .me-button--outline:focus {
-	background-color: var(--me-primary);
-	color: #ffffff;
+	background-color: transparent;
+	color: var(--me-primary-strong);
+	border-color: var(--me-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.me-button:hover,
+	.me-button:focus-visible {
+		transform: translateY(-1px);
+		box-shadow: var(--me-shadow-2);
+	}
+
+	.me-button--outline:hover,
+	.me-button--outline:focus-visible {
+		box-shadow: var(--me-shadow-1);
+	}
 }
 
 /* inverted button on the dark cta panel */
@@ -188,6 +237,87 @@ img {
 	background-color: var(--me-primary-strong);
 	border-color: var(--me-primary-strong);
 	color: #ffffff;
+}
+
+/* front-page hero */
+.me-hero {
+	position: relative;
+	overflow: hidden;
+	background-color: var(--me-surface);
+	background-image:
+		radial-gradient(120% 140% at 88% -10%, rgba(60, 107, 255, 0.14), transparent 58%),
+		linear-gradient(180deg, var(--me-surface) 0%, var(--me-bg) 100%);
+	border-bottom: 1px solid var(--me-line);
+}
+
+/* thin cobalt→ink signature rule across the top edge */
+.me-hero::before {
+	content: "";
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	height: 0.25rem;
+	background: var(--me-gradient-ink);
+}
+
+.me-hero__inner {
+	max-width: var(--me-wide);
+	margin-inline: auto;
+	padding-inline: var(--me-s3);
+	padding-block: var(--me-s5);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--me-s3);
+}
+
+.me-hero__eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin: 0;
+	padding: 0.4rem 0.9rem;
+	background-color: var(--me-bg);
+	border: 1px solid var(--me-line-strong);
+	border-radius: var(--me-radius-pill);
+	box-shadow: var(--me-shadow-1);
+	font-family: var(--me-font-heading);
+	font-weight: 600;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	color: var(--me-primary-strong);
+}
+
+.me-hero__eyebrow-dot {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background-color: var(--me-accent);
+	flex: 0 0 auto;
+}
+
+.me-hero__title {
+	margin: 0;
+	font-size: var(--me-d1);
+	line-height: 1.05;
+	letter-spacing: var(--me-track-display);
+	max-width: 18ch;
+}
+
+.me-hero__lede {
+	margin: 0;
+	max-width: 46ch;
+	color: var(--me-muted);
+	font-size: clamp(1.0625rem, 1.6vw, 1.375rem);
+	line-height: 1.5;
+}
+
+.me-hero__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--me-s2);
+	margin: var(--me-s1) 0 0;
 }
 
 /* header — logo left, nav right */
@@ -276,7 +406,8 @@ img {
 }
 
 .me-entry-title {
-	font-size: 2.5rem;
+	font-size: var(--me-d2);
+	line-height: 1.08;
 }
 
 .me-byline {
@@ -315,12 +446,12 @@ img {
 }
 
 .me-prose h2 {
-	font-size: 1.7rem;
+	font-size: var(--me-d3);
 	margin-top: var(--me-s4);
 }
 
 .me-prose h3 {
-	font-size: 1.3rem;
+	font-size: 1.375rem;
 	margin-top: var(--me-s3);
 }
 
@@ -397,7 +528,8 @@ img {
 }
 
 .me-feed__title {
-	font-size: 2.25rem;
+	font-size: var(--me-d2);
+	line-height: 1.08;
 }
 
 .me-feed__desc {
@@ -424,12 +556,18 @@ img {
 	border: 1px solid var(--me-line);
 	border-radius: var(--me-radius);
 	overflow: hidden;
-	transition: border-color 180ms var(--me-ease), transform 180ms var(--me-ease);
+	transition: border-color 180ms var(--me-ease), transform 180ms var(--me-ease), box-shadow 180ms var(--me-ease);
 }
 
 .me-card:hover {
-	border-color: var(--me-primary);
-	transform: translateY(-2px);
+	border-color: var(--me-line-strong);
+	box-shadow: var(--me-shadow-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.me-card:hover {
+		transform: translateY(-3px);
+	}
 }
 
 .me-card__media img {
@@ -571,6 +709,8 @@ img {
 
 /* cta banner */
 .me-cta {
+	position: relative;
+	overflow: hidden;
 	margin-block: var(--me-s4);
 	padding: var(--me-s4);
 	background-color: var(--me-surface);
@@ -584,7 +724,18 @@ img {
 
 .me-cta--solid {
 	background-color: var(--me-ink);
+	background-image: radial-gradient(120% 160% at 0% 0%, rgba(60, 107, 255, 0.22), transparent 55%);
 	border-color: var(--me-ink);
+}
+
+/* same cobalt→ink signature rule as the hero, tying the panels together */
+.me-cta--solid::before {
+	content: "";
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	height: 0.25rem;
+	background: var(--me-gradient-ink);
 }
 
 .me-cta--solid .me-cta__kicker {
@@ -609,7 +760,7 @@ img {
 
 .me-cta__heading {
 	margin: 0;
-	font-size: 1.75rem;
+	font-size: var(--me-d3);
 }
 
 .me-cta__text {
@@ -620,9 +771,20 @@ img {
 
 /* footer — dark, four columns + split bar */
 .me-footer {
+	position: relative;
 	background-color: var(--me-footer-bg);
 	color: var(--me-footer-ink);
 	padding-block: var(--me-s5) var(--me-s3);
+}
+
+/* cobalt→ink top rule echoing the hero, then a faint cobalt wash in the corner */
+.me-footer::before {
+	content: "";
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	height: 0.25rem;
+	background: var(--me-gradient-ink);
 }
 
 .me-footer a {
@@ -732,6 +894,11 @@ img {
 
 /* responsive (mobile-first) */
 @media (min-width: 48rem) {
+	.me-hero__inner {
+		padding-block: var(--me-s6);
+		gap: var(--me-s4);
+	}
+
 	.me-card {
 		flex: 1 1 calc(50% - var(--me-s3));
 	}

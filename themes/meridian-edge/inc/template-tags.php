@@ -59,6 +59,50 @@ function me_canonical_url() {
 }
 
 /**
+ * Render the front-page product hero from the page's own fields.
+ *
+ * Drives entirely off the post object — pill label, the title as the single H1,
+ * the excerpt as the subhead and a fixed solid/outline action pair — so it needs
+ * no ACF group and no Customizer state. page.php swaps this in for the default
+ * entry-header on the front page so the document keeps exactly one H1. The
+ * primary action resolves to a passed URL, else the /contact/ page.
+ *
+ * @param string $cta_url Optional primary destination; falls back to /contact/.
+ * @return void
+ */
+function meridian_edge_page_hero( $cta_url = '' ) {
+	$title   = get_the_title();
+	$excerpt = get_the_excerpt();
+	$primary = $cta_url ? $cta_url : home_url( '/contact/' );
+	$journal = home_url( '/journal/' );
+	?>
+	<section class="me-hero" aria-labelledby="me-hero-title">
+		<div class="me-hero__inner">
+			<p class="me-hero__eyebrow">
+				<span class="me-hero__eyebrow-dot" aria-hidden="true"></span>
+				<?php esc_html_e( 'Shipping v2.2 · Built for speed', 'meridian-edge' ); ?>
+			</p>
+
+			<h1 id="me-hero-title" class="me-hero__title"><?php echo esc_html( $title ); ?></h1>
+
+			<?php if ( $excerpt ) : ?>
+				<p class="me-hero__lede"><?php echo esc_html( $excerpt ); ?></p>
+			<?php endif; ?>
+
+			<p class="me-hero__actions">
+				<a class="me-button me-button--lg" href="<?php echo esc_url( $primary ); ?>">
+					<?php esc_html_e( 'Start a project', 'meridian-edge' ); ?>
+				</a>
+				<a class="me-button me-button--lg me-button--outline" href="<?php echo esc_url( $journal ); ?>">
+					<?php esc_html_e( 'Read the journal', 'meridian-edge' ); ?>
+				</a>
+			</p>
+		</div>
+	</section>
+	<?php
+}
+
+/**
  * Print the byline strip for a post: timestamp followed by its categories.
  *
  * @return void
