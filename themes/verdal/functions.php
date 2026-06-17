@@ -2,10 +2,10 @@
 /**
  * Verdal child theme functions.
  *
- * A calm, editorial GeneratePress child theme. Structural choices (centred
- * masthead, three-column footer, page-intro block) live here in code so the
- * theme is fully reproducible from the repository — none of it depends on
- * Customizer settings stored in the database.
+ * A calm, editorial GeneratePress child theme. Structure (centred masthead,
+ * three-column footer, page intro, the custom template set) lives here in code
+ * so the theme rebuilds from the repository alone — nothing depends on
+ * Customizer values stored in the database.
  *
  * @package Verdal
  */
@@ -14,10 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'VERDAL_VERSION', '1.0.3' );
+define( 'VERDAL_VERSION', '1.1.0' );
+
+require get_stylesheet_directory() . '/inc/template-tags.php';
 
 /**
- * Theme setup: i18n + a footer menu location.
+ * Theme setup: i18n, a footer menu, and the thumbnail size used by the cards.
  */
 function verdal_setup() {
 	load_child_theme_textdomain( 'verdal', get_stylesheet_directory() . '/languages' );
@@ -27,51 +29,47 @@ function verdal_setup() {
 			'footer-menu' => __( 'Footer Menu', 'verdal' ),
 		)
 	);
+
+	add_image_size( 'verdal-card', 720, 460, true );
 }
 add_action( 'after_setup_theme', 'verdal_setup' );
 
 /**
- * Enqueue fonts and the child stylesheet.
+ * Enqueue the minified stylesheet and progressive-enhancement script.
  *
- * GeneratePress enqueues its own CSS under the handle "generate-style"
- * (from assets/css/, not its style.css), so the child stylesheet simply
- * declares that handle as a dependency to load after it.
+ * GeneratePress enqueues its own CSS under the handle "generate-style" (from
+ * assets/css/, not its style.css), so the child stylesheet declares that handle
+ * as a dependency to load after it. Self-hosted fonts are declared with
+ * @font-face inside main.css. Under SCRIPT_DEBUG the unminified sources load.
  */
-function verdal_enqueue_assets() {
-	wp_enqueue_style(
-		'verdal-fonts',
-		'https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Mulish:wght@400;500;600;700&display=swap',
-		array(),
-		VERDAL_VERSION
-	);
+function verdal_assets() {
+	$min = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+	$uri = get_stylesheet_directory_uri();
 
-	wp_enqueue_style(
-		'verdal-style',
-		get_stylesheet_uri(),
-		array( 'generate-style' ),
-		VERDAL_VERSION
-	);
+	wp_enqueue_style( 'verdal-main', "{$uri}/css/main{$min}.css", array( 'generate-style' ), VERDAL_VERSION );
+	wp_enqueue_script( 'verdal-theme', "{$uri}/js/theme{$min}.js", array(), VERDAL_VERSION, true );
 }
-add_action( 'wp_enqueue_scripts', 'verdal_enqueue_assets', 20 );
+add_action( 'wp_enqueue_scripts', 'verdal_assets', 20 );
 
 /**
- * Preconnect to the Google Fonts hosts.
+ * Preload the two above-the-fold font files (heading + body) to protect LCP/CLS.
  *
- * @param array  $hints    URLs / hint arrays to print.
- * @param string $relation The relation type being filtered.
+ * @param array $preloads Existing preload definitions.
  * @return array
  */
-function verdal_resource_hints( $hints, $relation ) {
-	if ( 'preconnect' === $relation ) {
-		$hints[] = 'https://fonts.googleapis.com';
-		$hints[] = array(
-			'href'        => 'https://fonts.gstatic.com',
+function verdal_preload_fonts( $preloads ) {
+	$fonts = get_stylesheet_directory_uri() . '/fonts';
+	foreach ( array( 'lora-v37-latin-600.woff2', 'mulish-v18-latin-regular.woff2' ) as $file ) {
+		$preloads[] = array(
+			'href'        => "{$fonts}/{$file}",
+			'as'          => 'font',
+			'type'        => 'font/woff2',
 			'crossorigin' => 'anonymous',
 		);
 	}
-	return $hints;
+	return $preloads;
 }
-add_filter( 'wp_resource_hints', 'verdal_resource_hints', 10, 2 );
+add_filter( 'wp_preload_resources', 'verdal_preload_fonts' );
 
 /**
  * Place the primary navigation below the centred masthead.
@@ -84,8 +82,19 @@ function verdal_navigation_location() {
 add_filter( 'generate_navigation_location', 'verdal_navigation_location' );
 
 /**
- * Load ACF field groups from the theme's acf-json directory so the custom
- * field group is reproducible from the repository (not click-only in the DB).
+ * Verdal owns its content layout, so disable GeneratePress' sidebar columns and
+ * render a single, centred reading measure instead.
+ *
+ * @return string
+ */
+function verdal_layout() {
+	return 'no-sidebar';
+}
+add_filter( 'generate_sidebar_layout', 'verdal_layout' );
+
+/**
+ * Load ACF field groups from the theme's acf-json directory so the custom field
+ * group is reproducible from the repository (not click-only in the DB).
  *
  * @param array $paths Existing JSON load paths.
  * @return array
@@ -97,64 +106,59 @@ function verdal_acf_json_load_point( $paths ) {
 add_filter( 'acf/settings/load_json', 'verdal_acf_json_load_point' );
 
 /**
- * Render the ACF "Page Intro" block beneath the page title.
- *
- * All output is escaped at the point of output.
+ * Strip WordPress fingerprints from <head> (generator/version, shortlink, RSD,
+ * WLW, emoji). Reducing such machine-readable tells is part of de-footprinting.
  */
-function verdal_render_page_intro() {
-	if ( ! is_page() || ! function_exists( 'get_field' ) ) {
-		return;
-	}
-
-	$eyebrow = get_field( 'intro_eyebrow' );
-	$lead    = get_field( 'intro_lead' );
-	$cta     = get_field( 'intro_cta' );
-	$image   = get_field( 'intro_image' );
-	$boxed   = (bool) get_field( 'intro_boxed' );
-
-	if ( ! $eyebrow && ! $lead && empty( $cta ) && empty( $image ) ) {
-		return;
-	}
-
-	$classes = $boxed ? 'page-intro page-intro--boxed' : 'page-intro';
-	?>
-	<section class="<?php echo esc_attr( $classes ); ?>" aria-label="<?php esc_attr_e( 'Introduction', 'verdal' ); ?>">
-		<?php if ( $eyebrow ) : ?>
-			<p class="page-intro__eyebrow"><?php echo esc_html( $eyebrow ); ?></p>
-		<?php endif; ?>
-
-		<?php if ( $lead ) : ?>
-			<p class="page-intro__lead"><?php echo esc_html( $lead ); ?></p>
-		<?php endif; ?>
-
-		<?php if ( ! empty( $cta['url'] ) ) : ?>
-			<p class="page-intro__cta">
-				<a class="verdal-button" href="<?php echo esc_url( $cta['url'] ); ?>"<?php echo ! empty( $cta['target'] ) ? ' target="' . esc_attr( $cta['target'] ) . '" rel="noopener"' : ''; ?>>
-					<?php echo esc_html( ! empty( $cta['title'] ) ? $cta['title'] : __( 'Learn more', 'verdal' ) ); ?>
-				</a>
-			</p>
-		<?php endif; ?>
-
-		<?php if ( ! empty( $image['url'] ) ) : ?>
-			<figure class="page-intro__media">
-				<img
-					src="<?php echo esc_url( $image['url'] ); ?>"
-					alt="<?php echo esc_attr( $image['alt'] ?? '' ); ?>"
-					<?php if ( ! empty( $image['width'] ) ) : ?>width="<?php echo esc_attr( $image['width'] ); ?>"<?php endif; ?>
-					<?php if ( ! empty( $image['height'] ) ) : ?>height="<?php echo esc_attr( $image['height'] ); ?>"<?php endif; ?>
-					loading="lazy"
-					decoding="async"
-				/>
-			</figure>
-		<?php endif; ?>
-	</section>
-	<?php
+function verdal_clean_head() {
+	remove_action( 'wp_head', 'wp_generator' );
+	remove_action( 'wp_head', 'wp_shortlink_wp_head' );
+	remove_action( 'wp_head', 'rsd_link' );
+	remove_action( 'wp_head', 'wlwmanifest_link' );
+	remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+	remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	add_filter( 'the_generator', '__return_empty_string' );
 }
-add_action( 'generate_after_entry_header', 'verdal_render_page_intro' );
+add_action( 'init', 'verdal_clean_head' );
 
 /**
- * Replace GeneratePress' default footer with a three-column layout and a
- * centred copyright bar.
+ * Lightweight SEO: a meta description plus Open Graph tags.
+ *
+ * Yields to a dedicated SEO plugin if one is active, to avoid duplicate tags.
+ */
+function verdal_seo_meta() {
+	if ( defined( 'AIOSEO_VERSION' ) || defined( 'WPSEO_VERSION' ) || defined( 'RANK_MATH_VERSION' ) ) {
+		return;
+	}
+
+	$description = verdal_meta_description();
+
+	if ( $description ) {
+		printf( '<meta name="description" content="%s">' . "\n", esc_attr( $description ) );
+	}
+
+	printf( '<meta property="og:site_name" content="%s">' . "\n", esc_attr( get_bloginfo( 'name' ) ) );
+	printf( '<meta property="og:title" content="%s">' . "\n", esc_attr( wp_get_document_title() ) );
+
+	if ( $description ) {
+		printf( '<meta property="og:description" content="%s">' . "\n", esc_attr( $description ) );
+	}
+
+	printf( '<meta property="og:type" content="%s">' . "\n", is_singular() ? 'article' : 'website' );
+	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( is_singular() ? get_permalink() : home_url( add_query_arg( array() ) ) ) );
+
+	if ( is_singular() && has_post_thumbnail() ) {
+		printf( '<meta property="og:image" content="%s">' . "\n", esc_url( get_the_post_thumbnail_url( null, 'large' ) ) );
+	}
+}
+add_action( 'wp_head', 'verdal_seo_meta', 1 );
+
+/**
+ * Replace GeneratePress' default footer with a three-column layout and a centred
+ * copyright bar.
+ *
+ * The remove_action() calls are deferred to after_setup_theme because the parent
+ * registers these callbacks while its functions.php loads — which happens after
+ * the child's — so removing them at child parse time would be a no-op.
  */
 function verdal_footer() {
 	?>
@@ -207,12 +211,7 @@ function verdal_footer() {
 add_action( 'generate_footer', 'verdal_footer' );
 
 /**
- * Remove GeneratePress' default footer widgets and site-info credit so only the
- * custom footer renders.
- *
- * Deferred to after_setup_theme: the parent registers these callbacks while its
- * functions.php loads, which happens *after* the child's, so removing them at
- * child parse time would be a no-op.
+ * Defer removal of GeneratePress' footer widgets + site-info credit (see above).
  */
 function verdal_replace_footer_hooks() {
 	remove_action( 'generate_footer', 'generate_construct_footer_widgets', 5 );
