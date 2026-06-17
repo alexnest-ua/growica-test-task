@@ -38,13 +38,26 @@
 ## Структура репозиторію
 
 ```text
-themes/verdal/           Дочірня тема A  (style.css · functions.php · acf-json/)
-themes/meridian-edge/    Дочірня тема B  (style.css · functions.php · acf-json/)
+themes/<theme>/
+├── style.css            Заголовок теми (унікальний для кожної)
+├── functions.php        Налаштування, конвеєр ресурсів, хуки, SEO/clean-head, ACF
+├── inc/                 Багаторазові template-теги + хелпери рендеру
+├── template-parts/      Спільні компоненти (entry-header, картки, no-results)
+├── page.php single.php archive.php search.php 404.php index.php
+├── css/                 main.css (джерело) + main.min.css (підключається)
+├── js/                  theme.js (джерело) + theme.min.js (підключається)
+├── fonts/               Самохостингові woff2 (font-display: swap)
+└── acf-json/            ACF Local JSON (авто-завантаження, відтворюваність)
+
 docs/                    Двомовна документація (індекс нижче)
 ```
 
-Глибший розбір — анатомія дочірньої теми, використані хуки й повна матриця
-розходження A проти B — у [docs/04-architecture](docs/04-architecture.uk.md).
+Кожна тема постачає повний набір шаблонів на багаторазових `template-parts/`,
+самохостингові шрифти, конвеєр мініфікованих CSS/JS (несатиснені джерела
+вантажаться під `SCRIPT_DEBUG`), легке SEO + очищення `<head>` і
+прогресивно-покращувальний JS. Глибший розбір — анатомія дочірньої теми,
+використані хуки й повна матриця розходження A проти B — у
+[docs/04-architecture](docs/04-architecture.uk.md).
 
 ## Встановлення локально
 

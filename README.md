@@ -39,13 +39,26 @@ one parent, is in [docs/06-decisions](docs/06-decisions.en.md).
 ## Repository structure
 
 ```text
-themes/verdal/           Child theme A  (style.css · functions.php · acf-json/)
-themes/meridian-edge/    Child theme B  (style.css · functions.php · acf-json/)
+themes/<theme>/
+├── style.css            Theme header (unique per theme)
+├── functions.php        Setup, asset pipeline, hooks, SEO/clean-head, ACF
+├── inc/                 Reusable template tags + render helpers
+├── template-parts/      Shared components (entry-header, cards, no-results)
+├── page.php single.php archive.php search.php 404.php index.php
+├── css/                 main.css (source) + main.min.css (enqueued)
+├── js/                  theme.js (source) + theme.min.js (enqueued)
+├── fonts/               Self-hosted woff2 (font-display: swap)
+└── acf-json/            ACF Local JSON (auto-loaded, reproducible)
+
 docs/                    Bilingual documentation (see index below)
 ```
 
-A deeper walkthrough — child-theme anatomy, the hooks used and the full A-vs-B
-differentiation matrix — is in [docs/04-architecture](docs/04-architecture.en.md).
+Each theme ships a full template set built on reusable `template-parts/`,
+self-hosted fonts, a minified CSS/JS pipeline (unminified sources serve under
+`SCRIPT_DEBUG`), lightweight SEO + a head-cleanup pass, and progressive-
+enhancement JS. A deeper walkthrough — child-theme anatomy, the hooks used and
+the full A-vs-B differentiation matrix — is in
+[docs/04-architecture](docs/04-architecture.en.md).
 
 ## Install locally
 
