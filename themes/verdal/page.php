@@ -15,16 +15,13 @@ while ( have_posts() ) :
 	the_post();
 
 	/*
-	 * On the front page — or any page given ACF Page Intro content — lead with
-	 * the full editorial hero, which owns the single <h1>. Everywhere else keep
-	 * the standard entry header + (optional) intro block. This keeps exactly one
-	 * <h1> per page and avoids a duplicate, smaller title above the hero.
+	 * On the front page — or any page given ACF Page Intro content — the full
+	 * editorial hero owns the single <h1>. It is rendered above #content from
+	 * generate_after_header (see functions.php) so it can span full width, so
+	 * here we only skip the standard entry header + intro block on those views.
+	 * Exactly one <h1> per page.
 	 */
 	$verdal_use_hero = is_front_page() || verdal_has_page_intro();
-
-	if ( $verdal_use_hero ) {
-		verdal_page_hero();
-	}
 	?>
 	<div id="primary" class="content-area">
 		<main id="main" class="site-main verdal-main">
