@@ -1,78 +1,34 @@
 [English](02-solution.en.md) · [Українська](02-solution.uk.md)
 
-# Part 1 — Solution Document: Theme Uniqueization
+# Part 1 — Making sites stop looking like one network
 
-> Free-form reasoning on de-footprinting a network of sites that share a common
-> theme. The goal is structured thinking, not a single "correct" answer.
+*Free-form and first person — the brief asks how I think, so this is me reasoning out loud rather than reciting a checklist.*
 
-## What "theme uniqueization" means from Google's perspective
+**What Google actually reacts to.** Not "you used GeneratePress" — millions of sites share a theme. The problem is *footprints*: a group of sites that correlate too tightly. Same DOM and class names, same asset paths and file hashes, the same footer credit, the same plugins, often the same IP, analytics ID and WHOIS. Once enough of those line up, the sites read as one operator gaming rankings — and that's what gets devalued. So to me, uniqueization means breaking the *correlation*: each site should look independently built and maintained, not one template re-skinned.
 
-Google does not penalize a shared theme as such — it reacts to **footprints**:
-repeating, machine-detectable signals that several sites are run by one operator
-to manipulate rankings (the PBN / doorway pattern). A theme is one of the
-strongest footprints because it leaves fingerprints at **every layer**: identical
-DOM structure and CSS class names, the same asset paths and file hashes, the same
-fonts, the same footer credit line, the same plugin set, and often the same
-hosting, IPs and analytics IDs. Uniqueization means breaking the **correlation**
-between sites so each one reads as an independently built and maintained
-property — visually, structurally and technically — not merely a re-skin of one
-template.
+**The layers, and the one I'd protect first.** I think of three, in order of weight:
 
-## Layers of uniqueization, and which matters most
+1. **Technical / structural — most important.** Markup, class names, theme metadata, asset hashes, plugin set, hosting, IPs, analytics IDs. This is exactly what automated footprint analysis clusters on — get it wrong and no amount of restyling saves you.
+2. **Content & architecture.** Templates, navigation, boilerplate copy. Duplicated structure is itself a signal.
+3. **Presentation.** Colour, type, spacing — what humans notice, but the cheapest layer to change, so the weakest on its own.
 
-1. **Technical / structural footprint — most important.** HTML structure and
-   class names, theme name/author/version, asset URLs and hashes, plugin
-   fingerprints, robots/sitemaps, hosting, IP ranges, analytics/AdSense IDs,
-   WHOIS. This is exactly what automated link-graph and footprint analysis
-   clusters on. If two sites share these, visual differences will not save them.
-2. **Content & information architecture.** Page templates, navigation, content
-   model and boilerplate copy. Duplicated structure across sites is itself a
-   clustering signal.
-3. **Presentation — colours, typography, spacing.** Essential for *human*
-   dissimilarity and trust, but the cheapest layer to change, so the weakest
-   signal on its own.
+My rule of thumb: presentation is necessary, never sufficient.
 
-**Structural/technical de-footprinting matters most; presentation is necessary
-but not sufficient.**
+**Five sites in a week.** I'd front-load the audit and the expensive signals:
 
-## How I would uniqueize 5 sites in a week
+- **Day 1** — audit everything shared; write a per-site identity matrix (palette, type pair, header/footer structure, content model).
+- **Days 2–4** — diverge structurally: different header/footer skeletons, class naming and theme metadata, a varied plugin mix, ideally a different parent on some sites.
+- **Day 5** — presentation, rewritten boilerplate, unique imagery.
+- **Day 6** — infrastructure: spread hosting/IPs, separate Analytics and Search Console.
+- **Day 7** — re-run the fingerprint audit and diff the sites against each other.
 
-- **Day 1 — Audit & fingerprint.** Catalogue everything shared: theme, child
-  structure, plugins, fonts, footer/credits, analytics IDs, hosting/IP,
-  sitemaps. Define a per-site "identity matrix" (palette, type pair, header and
-  footer structure, content model).
-- **Days 2–4 — Structural divergence.** Give each site a genuinely different
-  template skeleton: distinct header/footer structure, distinct DOM/class
-  naming, distinct theme metadata, a varied plugin mix, self-hosted vs CDN
-  fonts. Where feasible, vary the **parent theme** too, not only the child.
-- **Day 5 — Presentation & content.** Apply distinct palettes/typography,
-  rewrite shared boilerplate (footers, about, legal), use unique imagery.
-- **Day 6 — Infrastructure.** Spread hosting/IP, separate Analytics and Search
-  Console properties, distinct WHOIS where legitimate.
-- **Day 7 — Verify.** Re-run the fingerprint audit, diff the sites against each
-  other, and confirm no shared IDs, hashes or credit strings remain.
+**First vs last.** First: the audit and the high-correlation technical signals (theme / plugin / analytics / hosting). Last: visual polish and microcopy — low-risk and quick, once the structure is sound.
 
-## First vs last
+**Risks I'd watch:**
 
-- **First:** the audit, then the highest-correlation technical signals
-  (theme / plugin / analytics / hosting fingerprints) — they carry the most
-  clustering weight.
-- **Last:** visual polish and microcopy — cheap and low-risk, done once the
-  structure is sound.
+- *SEO dips while restructuring* → stage on clones, keep URLs and redirects stable, watch Search Console.
+- *Cosmetic-only changes still cluster* → insist on structural **and** infrastructure divergence.
+- *A shared "randomiser" becoming its own footprint* → vary by hand, not procedurally.
+- *Chasing detection instead of quality* → build genuinely independent, better sites, not just evasion.
 
-## Risks and how I would mitigate them
-
-- **SEO regressions while restructuring** → stage on clones, keep URLs and
-  redirects stable, watch Search Console for crawl/index changes.
-- **Cosmetic-only changes still cluster** → insist on structural **and**
-  infrastructure divergence, not just CSS.
-- **A new uniformity** (the same "randomiser" applied to every site becomes a
-  *new* footprint) → vary deliberately and by hand, not procedurally.
-- **Over-optimisation that looks manipulative** → aim for genuinely
-  independent-looking properties and improve real UX/quality, rather than only
-  evading detection.
-
----
-
-See [decisions & notes](06-decisions.en.md) for how this thinking maps onto the
-two child themes built in Part 2.
+Part 2 is this made concrete: two children off one parent, but different markup, class prefixes, metadata, headers, footers, fonts and ACF groups — see [decisions & notes](06-decisions.en.md).

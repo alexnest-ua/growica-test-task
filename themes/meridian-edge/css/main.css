@@ -775,6 +775,7 @@ img {
 	background-color: var(--me-footer-bg);
 	color: var(--me-footer-ink);
 	padding-block: var(--me-s5) var(--me-s3);
+	padding-inline: var(--me-s3);
 }
 
 /* cobalt→ink top rule echoing the hero, then a faint cobalt wash in the corner */

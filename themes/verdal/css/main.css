@@ -666,6 +666,7 @@ img {
 	background-color: var(--vd-surface);
 	border-top: 1px solid var(--vd-line);
 	padding-block: var(--vd-space-6) var(--vd-space-4);
+	padding-inline: var(--vd-space-3);
 }
 
 .verdal-footer__grid {
