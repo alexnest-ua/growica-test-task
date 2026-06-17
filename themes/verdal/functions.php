@@ -51,20 +51,28 @@ function verdal_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'verdal_assets', 20 );
 
+/*
+ * The theme.json preset sheet (colours, gradients, spacing utilities) is the
+ * single largest block of CSS WordPress inlines, and Verdal — painting from its
+ * own tokens — never references it. Unhook it at load time: a late dequeue does
+ * not catch it, but removing the action stops it being enqueued at all. The
+ * wp_footer pass for late blocks is dropped too.
+ */
+remove_action( 'wp_enqueue_scripts', 'wp_enqueue_global_styles' );
+remove_action( 'wp_footer', 'wp_enqueue_global_styles', 1 );
+
 /**
- * Trim WordPress core block CSS that this theme does not use.
+ * Dequeue the remaining core block CSS the theme does not use.
  *
- * Core inlines the full block-library sheet plus the theme.json preset sheet
- * (colours, gradients, spacing utilities) into every page head. Verdal styles
- * its own prose with its own design tokens and never references those presets,
- * so the markup is dead weight in the document head — dequeue it. The skip-link
- * and screen-reader-text rules live in main.css, so accessibility never depends
- * on the sheets removed here.
+ * Post content is built from core blocks, so WordPress loads each block's own
+ * small stylesheet on demand — far leaner than the monolithic block-library
+ * sheet plus the classic-theme button defaults. The skip-link and
+ * screen-reader-text rules live in main.css, so accessibility never depends on
+ * the sheets removed here.
  */
 function verdal_trim_block_styles() {
-	wp_dequeue_style( 'global-styles' );
-	wp_dequeue_style( 'global-styles-css-custom-properties' );
 	wp_dequeue_style( 'classic-theme-styles' );
+	wp_dequeue_style( 'global-styles-css-custom-properties' );
 	wp_dequeue_style( 'wp-block-library' );
 	wp_dequeue_style( 'wp-block-library-theme' );
 }

@@ -54,23 +54,21 @@ function me_enqueue_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'me_enqueue_assets', 20 );
 
+// the theme.json preset sheet is the biggest thing core inlines, and meridian
+// never paints with those presets. a late dequeue misses it, so unhook the
+// enqueue itself (head + the wp_footer pass) while functions.php loads.
+remove_action( 'wp_enqueue_scripts', 'wp_enqueue_global_styles' );
+remove_action( 'wp_footer', 'wp_enqueue_global_styles', 1 );
+
 /**
- * Drop core block + global-styles CSS the product theme never uses.
+ * Dequeue the rest of the core block CSS the product theme never paints with.
  *
- * keeps the head lean; meridian paints its prose from its own tokens and skips
- * the theme.json preset utilities entirely. the screen-reader + skip-link rules
- * live in main.css, so accessibility survives the removal.
+ * Posts are built from core blocks, so WordPress serves each used block's small
+ * sheet on demand instead of the monolithic library. The skip-link and
+ * screen-reader rules live in main.css, so accessibility survives the removal.
  */
 function me_dequeue_block_css() {
-	$handles = array(
-		'global-styles',
-		'global-styles-css-custom-properties',
-		'classic-theme-styles',
-		'wp-block-library',
-		'wp-block-library-theme',
-	);
-
-	foreach ( $handles as $handle ) {
+	foreach ( array( 'classic-theme-styles', 'global-styles-css-custom-properties', 'wp-block-library', 'wp-block-library-theme' ) as $handle ) {
 		wp_dequeue_style( $handle );
 	}
 }
