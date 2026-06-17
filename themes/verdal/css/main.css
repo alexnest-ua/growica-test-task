@@ -53,6 +53,7 @@
 	--vd-primary-strong: #134a39;
 	--vd-accent: #b65a2b;
 	--vd-line: #dde6df;
+	--vd-field-border: #5f6f66; /* form-control border — ≥3:1 non-text contrast (WCAG 1.4.11) */
 	/* A barely-there section tint to set bands apart without hard borders. */
 	--vd-tint: #eef3ee;
 
@@ -810,7 +811,7 @@ img {
 	flex: 1 1 16rem;
 	min-height: 2.75rem;
 	padding: 0.5rem 0.9rem;
-	border: 1px solid var(--vd-line);
+	border: 1px solid var(--vd-field-border);
 	border-radius: var(--vd-radius);
 	background-color: var(--vd-surface);
 	color: var(--vd-ink);
@@ -835,4 +836,19 @@ img {
 .search-form .search-submit:focus {
 	background-color: var(--vd-primary-strong);
 	border-color: var(--vd-primary-strong);
+}
+
+/* ==========================================================================
+   Form fields — visible border meeting WCAG non-text contrast (≥ 3:1)
+   ========================================================================== */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="number"],
+input[type="password"],
+textarea {
+	border: 1px solid var(--vd-field-border);
+	border-radius: var(--vd-radius);
 }
