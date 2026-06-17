@@ -70,6 +70,26 @@ The stylesheet depends on the parent handle **`generate-style`** — GeneratePre
 enqueues its own CSS under that handle (from `assets/css/`, not its `style.css`),
 so the child loads after it without re-enqueuing an empty parent stylesheet.
 
+### A lean document head
+
+Each theme also unhooks WordPress' largest inlined stylesheet — the `theme.json`
+preset sheet (`wp_enqueue_global_styles`) — and dequeues the core
+`block-library` / `classic-theme` styles it never uses, because both themes paint
+entirely from their own design tokens and never touch the block colour/gradient
+presets. WordPress then serves only each *used* block's small stylesheet on
+demand. The `screen-reader-text` utility lives in `main.css`, so the skip-link
+accessibility never depends on the removed sheets. This is implemented with
+different code in each theme (Verdal: explicit `wp_dequeue_style()` calls;
+Meridian Edge: an array loop) so it adds no shared footprint.
+
+### Images
+
+All content and Open Graph images are served as **WebP**. The theme
+`screenshot.png` and `apple-touch-icon.png` deliberately stay PNG — WordPress
+requires a PNG/JPG theme screenshot and iOS home-screen icons must be PNG.
+Featured images declare `width`/`height` to reserve space (no CLS); the LCP hero
+image uses `fetchpriority="high"`, and below-the-fold media uses `loading="lazy"`.
+
 ## Self-hosted fonts
 
 Fonts are shipped as woff2 (latin) under `fonts/`, declared with `@font-face` +
@@ -85,8 +105,15 @@ The templates own the content area; the header and footer remain hook-based:
   custom footer still come from `functions.php` hooks (no `header.php`/`footer.php`).
 - Shared markup lives in `template-parts/` and is pulled in with
   `get_template_part()` (e.g. the post card is reused by blog, archive and search).
-- ACF is rendered **directly in the templates** via `inc/template-tags.php`, so it
-  does not depend on a GeneratePress content hook firing.
+- The **front-page hero** is rendered above `#content` via the
+  `generate_after_header` hook. GeneratePress makes `#content` a flex row, so a
+  hero echoed from inside the template would sit *beside* the content column;
+  the hook places it full-width above. The main loop is spun once and
+  `rewind_posts()` restores it for the template's own loop, keeping exactly one
+  `<h1>` per view.
+- Other ACF output (Verdal's interior page-intro block, Meridian's post CTA) is
+  rendered **directly in the templates** via `inc/template-tags.php`, so it does
+  not depend on a GeneratePress content hook firing.
 - `generate_sidebar_layout` is forced to `no-sidebar`; each theme controls its
   content measure in CSS.
 
@@ -96,10 +123,12 @@ The templates own the content area; the header and footer remain hook-based:
 |---------|-----------|------------|-------------------|
 | Nav position | `generate_navigation_location` | `nav-below-header` (centred) | `nav-float-right` (logo-left/menu-right) |
 | Layout | `generate_sidebar_layout` | `no-sidebar` | `no-sidebar` |
+| Front-page hero | `generate_after_header` (full-width, above `#content`) | eyebrow + title + lead + image | pill + title + lede + CTA pair |
+| Trim core CSS | unhook `wp_enqueue_global_styles`; dequeue `block-library`/`classic-theme` | ✔ explicit calls | ✔ array loop |
 | Footer | remove GP footer + `add_action('generate_footer', …)` (removal deferred to `after_setup_theme`) | 3 columns + centred copyright | dark 4 columns + split bottom bar |
-| Font preload | `wp_preload_resources` | Lora 600 + Mulish 400 | Space Grotesk 600 + IBM Plex 400 |
+| Font preload | `wp_preload_resources` | Lora 700 + Mulish 400 | Space Grotesk 700 + IBM Plex 400 |
 | ACF source | `acf/settings/load_json` → `acf-json/` | ✔ | ✔ |
-| ACF render | in-template (`inc/template-tags.php`) | page intro on `page.php` | post CTA on `single.php` |
+| ACF render | hero via `generate_after_header`; rest in-template | Page Intro → front-page hero | post CTA on `single.php` |
 | Footer menu | `register_nav_menus('footer-menu')` | ✔ | ✔ |
 | Head cleanup | `init` / `wp_head` | strip generator/shortlink/RSD/WLW/emoji | same intent, own implementation |
 
@@ -141,7 +170,7 @@ full functionality without JS:
 | Card style | soft, rounded, media-top | sharp "spec-sheet", uppercase byline |
 | Comment voice | prose banner comments | terse lowercase markers |
 | Text domain / prefixes | `verdal`, `--vd-*`, `.verdal-*`, `verdal_*` | `meridian-edge`, `--me-*`, `.me-*`, `meridian_edge_*` |
-| `style.css` Author / Version | Sagewright Studio / 1.1.0 | Brightseam Labs / 2.2.0 |
+| `style.css` Author / Version | Sagewright Studio / 1.2.0 | Brightseam Labs / 2.3.0 |
 | ACF group | Page Intro on pages, 5 fields | Post CTA Banner on posts, 6 fields + conditional logic |
 
 The themes share **no authored comments, docblocks, helper bodies, section-comment

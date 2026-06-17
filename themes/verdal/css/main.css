@@ -725,7 +725,10 @@ img {
    ========================================================================== */
 @media (min-width: 48rem) {
 	.verdal-card {
-		flex: 1 1 calc(50% - var(--vd-space-4));
+		/* Cap at the two-up width so a lone last card stays half-width,
+		   left-aligned, instead of growing to fill the whole row. */
+		flex: 1 1 calc(50% - var(--vd-space-4) / 2);
+		max-width: calc(50% - var(--vd-space-4) / 2);
 	}
 
 	.verdal-footer__grid {
