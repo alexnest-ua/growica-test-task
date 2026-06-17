@@ -1,0 +1,106 @@
+{
+	"key": "group_verdal_page_intro",
+	"title": "Page Intro (Verdal)",
+	"fields": [
+		{
+			"key": "field_verdal_intro_eyebrow",
+			"label": "Eyebrow",
+			"name": "intro_eyebrow",
+			"aria-label": "",
+			"type": "text",
+			"instructions": "Short kicker shown above the lead, in uppercase.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"default_value": "",
+			"maxlength": 60,
+			"placeholder": "",
+			"prepend": "",
+			"append": ""
+		},
+		{
+			"key": "field_verdal_intro_lead",
+			"label": "Lead paragraph",
+			"name": "intro_lead",
+			"aria-label": "",
+			"type": "textarea",
+			"instructions": "One or two sentences introducing the page.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"default_value": "",
+			"maxlength": "",
+			"rows": 3,
+			"placeholder": "",
+			"new_lines": ""
+		},
+		{
+			"key": "field_verdal_intro_cta",
+			"label": "Call to action",
+			"name": "intro_cta",
+			"aria-label": "",
+			"type": "link",
+			"instructions": "Optional button shown under the lead.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"return_format": "array"
+		},
+		{
+			"key": "field_verdal_intro_image",
+			"label": "Intro image",
+			"name": "intro_image",
+			"aria-label": "",
+			"type": "image",
+			"instructions": "Optional supporting image.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"return_format": "array",
+			"library": "all",
+			"min_width": "",
+			"min_height": "",
+			"min_size": "",
+			"max_width": "",
+			"max_height": "",
+			"max_size": "",
+			"mime_types": "",
+			"preview_size": "medium"
+		},
+		{
+			"key": "field_verdal_intro_boxed",
+			"label": "Boxed style",
+			"name": "intro_boxed",
+			"aria-label": "",
+			"type": "true_false",
+			"instructions": "Wrap the intro in a bordered card.",
+			"required": 0,
+			"conditional_logic": 0,
+			"wrapper": { "width": "", "class": "", "id": "" },
+			"message": "Show the intro inside a bordered card",
+			"default_value": 0,
+			"ui": 1,
+			"ui_on_text": "",
+			"ui_off_text": ""
+		}
+	],
+	"location": [
+		[
+			{
+				"param": "post_type",
+				"operator": "==",
+				"value": "page"
+			}
+		]
+	],
+	"menu_order": 0,
+	"position": "acf_after_title",
+	"style": "default",
+	"label_placement": "top",
+	"instruction_placement": "label",
+	"hide_on_screen": "",
+	"active": true,
+	"description": "Editorial page intro for the Verdal theme: eyebrow, lead, CTA and an optional image.",
+	"show_in_rest": 0,
+	"modified": 1718200000
+}

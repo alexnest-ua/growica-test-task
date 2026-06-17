@@ -1,0 +1,324 @@
+/*
+Theme Name: Verdal
+Theme URI: https://verdal.studio
+Author: Sagewright Studio
+Author URI: https://sagewright.studio
+Description: Verdal is a calm, editorial child theme built on GeneratePress for wellbeing studios, slow-living journals and independent practitioners. It pairs a warm botanical-green palette with a Lora display face, a centred masthead and an unhurried reading rhythm.
+Template: generatepress
+Version: 1.0.3
+Requires at least: 6.5
+Tested up to: 7.0
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: verdal
+Tags: child-theme, two-columns, custom-colors, custom-menu, editor-style, blog, wellness
+*/
+
+/* ==========================================================================
+   Verdal — design tokens
+   ========================================================================== */
+:root {
+	/* Palette — warm botanical green (tinted neutrals, no pure black/grey). */
+	--vd-bg: #f4f7f4;
+	--vd-surface: #ffffff;
+	--vd-ink: #18271f;
+	--vd-muted: #4e5b53;
+	--vd-primary: #1f6b53;
+	--vd-primary-strong: #134a39;
+	--vd-accent: #b65a2b;
+	--vd-line: #dde6df;
+
+	/* Typography. */
+	--vd-font-heading: "Lora", Georgia, "Times New Roman", serif;
+	--vd-font-body: "Mulish", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--vd-text: 1.125rem;
+	--vd-leading: 1.7;
+
+	/* Spacing scale + shape. */
+	--vd-space-1: 0.5rem;
+	--vd-space-2: 1rem;
+	--vd-space-3: 1.5rem;
+	--vd-space-4: 2.5rem;
+	--vd-space-5: 4rem;
+	--vd-radius: 0.5rem;
+	--vd-maxw: 48rem;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+body {
+	background-color: var(--vd-bg);
+	color: var(--vd-ink);
+	font-family: var(--vd-font-body);
+	font-size: var(--vd-text);
+	line-height: var(--vd-leading);
+}
+
+h1, h2, h3, h4, h5, h6,
+.entry-title,
+.site-title {
+	font-family: var(--vd-font-heading);
+	color: var(--vd-ink);
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+a {
+	color: var(--vd-primary);
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.18em;
+}
+
+a:hover,
+a:focus {
+	color: var(--vd-primary-strong);
+}
+
+/* Visible keyboard focus everywhere (a11y). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+.main-nav a:focus-visible {
+	outline: 3px solid var(--vd-primary);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.verdal-button,
+.entry-content .wp-block-button__link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.75rem;
+	padding: 0.65rem 1.5rem;
+	background-color: var(--vd-primary);
+	color: var(--vd-surface);
+	font-family: var(--vd-font-body);
+	font-weight: 700;
+	border-radius: var(--vd-radius);
+	text-decoration: none;
+	transition: background-color 200ms ease-out;
+}
+
+.verdal-button:hover,
+.verdal-button:focus,
+.entry-content .wp-block-button__link:hover {
+	background-color: var(--vd-primary-strong);
+	color: var(--vd-surface);
+}
+
+/* ==========================================================================
+   Header — centred masthead, navigation below
+   ========================================================================== */
+.site-header {
+	background-color: var(--vd-surface);
+	border-bottom: 1px solid var(--vd-line);
+}
+
+.inside-header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--vd-space-2);
+	text-align: center;
+	padding-block: var(--vd-space-3);
+}
+
+.site-branding,
+.site-logo {
+	text-align: center;
+}
+
+.main-title {
+	font-size: 2rem;
+	letter-spacing: 0.01em;
+}
+
+.main-title a {
+	color: var(--vd-ink);
+	text-decoration: none;
+}
+
+.site-description {
+	color: var(--vd-muted);
+	font-style: italic;
+	font-family: var(--vd-font-heading);
+}
+
+/* Centre the navigation bar beneath the masthead. */
+.main-navigation {
+	background-color: var(--vd-surface);
+	border-bottom: 1px solid var(--vd-line);
+}
+
+.main-navigation .main-nav > ul {
+	justify-content: center;
+}
+
+.main-navigation a {
+	font-family: var(--vd-font-body);
+	font-weight: 600;
+	color: var(--vd-ink);
+}
+
+.main-navigation .main-nav > ul > li:hover > a,
+.main-navigation .main-nav > ul > li.current-menu-item > a {
+	color: var(--vd-primary);
+}
+
+/* ==========================================================================
+   Content rhythm
+   ========================================================================== */
+.entry-content {
+	max-width: var(--vd-maxw);
+}
+
+.entry-content > * + * {
+	margin-top: var(--vd-space-3);
+}
+
+.entry-content h2 {
+	font-size: 1.6rem;
+	margin-top: var(--vd-space-4);
+}
+
+.entry-title {
+	font-size: 2.25rem;
+}
+
+/* ==========================================================================
+   ACF — Page Intro block (rendered after the entry header on pages)
+   ========================================================================== */
+.page-intro {
+	max-width: var(--vd-maxw);
+	margin-block: var(--vd-space-3);
+	display: flex;
+	flex-direction: column;
+	gap: var(--vd-space-2);
+}
+
+.page-intro--boxed {
+	background-color: var(--vd-surface);
+	border: 1px solid var(--vd-line);
+	border-radius: var(--vd-radius);
+	padding: var(--vd-space-3);
+}
+
+.page-intro__eyebrow {
+	margin: 0;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	font-size: 1rem;
+	font-weight: 700;
+	color: var(--vd-primary);
+}
+
+.page-intro__lead {
+	margin: 0;
+	font-family: var(--vd-font-heading);
+	font-size: 1.4rem;
+	line-height: 1.5;
+	color: var(--vd-ink);
+}
+
+.page-intro__media {
+	margin: 0;
+}
+
+.page-intro__media img {
+	width: 100%;
+	height: auto;
+	border-radius: var(--vd-radius);
+}
+
+/* ==========================================================================
+   Footer — three columns + centred copyright
+   ========================================================================== */
+.verdal-footer {
+	background-color: var(--vd-surface);
+	border-top: 1px solid var(--vd-line);
+	padding-block: var(--vd-space-4) var(--vd-space-3);
+}
+
+.verdal-footer__grid {
+	display: flex;
+	flex-direction: column;
+	gap: var(--vd-space-4);
+}
+
+.verdal-footer__title {
+	font-family: var(--vd-font-heading);
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin: 0 0 var(--vd-space-1);
+}
+
+.verdal-footer__blurb,
+.verdal-footer__text {
+	color: var(--vd-muted);
+	margin: 0;
+}
+
+.verdal-footer__heading {
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	color: var(--vd-muted);
+	margin: 0 0 var(--vd-space-2);
+}
+
+.verdal-footer__menu {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--vd-space-1);
+}
+
+.verdal-footer__bar {
+	margin-top: var(--vd-space-4);
+	padding-top: var(--vd-space-3);
+	border-top: 1px solid var(--vd-line);
+	text-align: center;
+}
+
+.verdal-footer__copy {
+	margin: 0;
+	color: var(--vd-muted);
+	font-family: var(--vd-font-heading);
+	font-style: italic;
+}
+
+/* ==========================================================================
+   Responsive — three footer columns on wider viewports (mobile-first)
+   ========================================================================== */
+@media (min-width: 48rem) {
+	.verdal-footer__grid {
+		flex-direction: row;
+		justify-content: space-between;
+	}
+
+	.verdal-footer__col {
+		flex: 1 1 0;
+	}
+
+	.verdal-footer__brand {
+		flex: 1.4 1 0;
+	}
+}
+
+/* Respect reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
+}
