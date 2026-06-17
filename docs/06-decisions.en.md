@@ -44,8 +44,12 @@ so colour, type and structure diverge naturally rather than arbitrarily:
   display (Space Grotesk), split logo-left/menu-right header, dark 4-column
   footer.
 
-Visual polish was deliberately kept modest — the brief explicitly values
-functional and structural difference over looking pretty.
+After an initial modest cut, both themes were **elevated to a premium feel** on
+request: oversized fluid type scales (`clamp()`), generous whitespace, a real
+full-width hero per theme (editorial for Verdal, product/SaaS for Meridian Edge),
+refined buttons and soft low-opacity elevation — while preserving the functional
+and structural differentiation the brief values most. The palettes, fonts,
+headers, footers and ACF groups stayed distinct throughout.
 
 ## Templates: a deliberate override set
 
@@ -59,8 +63,10 @@ and reusable components. The tension is resolved as follows:
 - The **header and footer stay hook-based** — the templates call
   `get_header()`/`get_footer()`, so the centred/split masthead and the custom
   footers still come from `functions.php`; no `header.php`/`footer.php` is copied.
-- ACF is rendered **directly in the templates** (via `inc/template-tags.php`),
-  so it no longer depends on a GeneratePress content hook firing.
+- The front-page hero renders above `#content` via `generate_after_header` (GP
+  makes `#content` a flex row, so an in-template hero would sit *beside* the
+  content); the remaining ACF output renders **directly in the templates** (via
+  `inc/template-tags.php`), so it does not depend on a GP content hook firing.
 - `generate_sidebar_layout` is forced to `no-sidebar` so each theme fully owns
   its content layout in CSS.
 
@@ -91,6 +97,25 @@ CSS and JS live as readable sources in `css/` and `js/`, built to `*.min`
 versions with `csso` / `terser`. The theme enqueues the minified files and serves
 the unminified sources when `SCRIPT_DEBUG` is on — idiomatic WordPress and easy to
 debug.
+
+## A lean document head (after review)
+
+WordPress inlines a large `theme.json` preset stylesheet plus the core
+`block-library` / `classic-theme` sheets into every page `<head>`. Neither theme
+uses those block presets — they paint from their own design tokens — so each
+**unhooks `wp_enqueue_global_styles`** and dequeues the unused core sheets, letting
+WordPress serve only the small per-block CSS actually used. `screen-reader-text`
+is defined in each theme's `main.css`, so removing the core sheets never affects
+the skip-link. Implemented with different code per theme (explicit
+`wp_dequeue_style()` calls vs an array loop) to avoid a shared footprint.
+
+## Images: WebP, with two deliberate PNG exceptions
+
+All content and Open Graph images are **WebP** (smaller, modern, widely
+supported). Two assets stay PNG on purpose: the theme `screenshot.png`
+(WordPress's themes screen expects PNG/JPG) and `apple-touch-icon.png` (iOS
+home-screen icons must be PNG). The favicon is an SVG with the PNG apple-touch
+fallback.
 
 ## SEO + clean head (self-made, plugin-aware)
 
@@ -132,17 +157,23 @@ Real-browser testing earned its keep:
 2. **Verdal footer third column escaped its container.** A `<nav>` opened in the
    footer was closed with `</div>`, so the browser closed the grid early. Fix:
    close it with `</nav>`. Caught by inspecting the live DOM vs. the server HTML.
+3. **Redesigned hero rendered beside the content, not above it.** The new hero was
+   echoed from inside the template, but GeneratePress makes `#content` a flex row —
+   so the hero became a flex sibling of `#primary`, sat in a narrow column and
+   squashed the feature image to a thumbnail. Caught immediately in the browser.
+   Fix: render the hero from `generate_after_header` (full width, above `#content`)
+   in both themes, spinning the loop once and `rewind_posts()`-ing it back.
 
-Both are recorded in the git history as a `fix:` commit rather than amended away,
-so the verify→fix loop is visible.
+These are recorded in git history as `fix:` commits rather than amended away, so
+the verify→fix loop stays visible.
 
 ## Risks & mitigations (this implementation)
 
 | Risk | Mitigation |
 |------|------------|
-| Free hosted demos expire | Use InstaWP (more persistent); README notes links may need refreshing; themes are installable from the repo regardless. |
+| Hosted demos disappearing | Both run on InstaWP's paid Sandbox plan, so they persist (no 48-hour expiry); each theme also installs from the repo in minutes if ever needed. |
 | GP Customizer settings not in repo | All structural choices are in **code**, so the theme rebuilds without any DB-stored Customizer state. |
-| Self-signed cert on local dev | Verified over `https://testwp`; production runs valid TLS. |
+| UI regression from CSS/markup changes | Every change is verified in a real browser on the live demos — hero placement, one `<h1>` per view, WebP delivery, reduced inline CSS — before sign-off. |
 | Theme name/slug collision across a network | Each site uses unique Theme Name, text domain and prefixes; at scale, generate per-site identities. |
 
 ## Other notes
