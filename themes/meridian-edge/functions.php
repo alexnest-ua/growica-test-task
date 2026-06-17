@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ME_VERSION', '2.2.0' );
+define( 'ME_VERSION', '2.3.0' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
@@ -53,6 +53,28 @@ function me_enqueue_assets() {
 	wp_enqueue_script( 'meridian-edge', "{$base}/js/theme{$suffix}.js", array(), ME_VERSION, true );
 }
 add_action( 'wp_enqueue_scripts', 'me_enqueue_assets', 20 );
+
+/**
+ * Drop core block + global-styles CSS the product theme never uses.
+ *
+ * keeps the head lean; meridian paints its prose from its own tokens and skips
+ * the theme.json preset utilities entirely. the screen-reader + skip-link rules
+ * live in main.css, so accessibility survives the removal.
+ */
+function me_dequeue_block_css() {
+	$handles = array(
+		'global-styles',
+		'global-styles-css-custom-properties',
+		'classic-theme-styles',
+		'wp-block-library',
+		'wp-block-library-theme',
+	);
+
+	foreach ( $handles as $handle ) {
+		wp_dequeue_style( $handle );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'me_dequeue_block_css', 100 );
 
 /**
  * Preload the heading + body faces used above the fold to steady LCP and CLS.
@@ -110,7 +132,7 @@ add_filter( 'generate_sidebar_layout', 'me_sidebar_layout' );
  * and the_excerpt() resolve for the front page.
  */
 function meridian_edge_render_page_hero() {
-	if ( ! is_front_page() || ! have_posts() ) {
+	if ( ! is_front_page() || ! is_page() || ! have_posts() ) {
 		return;
 	}
 
@@ -183,7 +205,7 @@ function me_structured_data() {
 		: get_stylesheet_directory_uri() . '/assets/og-image.webp';
 	$canonical   = me_canonical_url();
 
-	// Core already prints rel=canonical on singular; only add it where it doesn't.
+	// Singular views already get a core canonical link; only the rest need one here.
 	if ( ! is_singular() ) {
 		printf( '<link rel="canonical" href="%s">' . "\n", esc_url( $canonical ) );
 	}

@@ -18,15 +18,17 @@ field groups.
 
 ## Live demos
 
-> Deployed on InstaWP, with *Settings → Reading → Discourage search engines*
-> enabled on each (per the noindex requirement). Free hosted sites are
-> ephemeral — if a link has expired, the themes install from this repo in
-> minutes (see [Install](#install-locally)).
-
 | Theme | Live URL |
 |-------|----------|
-| **Verdal** | _added after deployment_ |
-| **Meridian Edge** | _added after deployment_ |
+| **Verdal** | <https://swank-hoopoe-6dc562.instawp.site> |
+| **Meridian Edge** | <https://cautious-manx-348569.instawp.site> |
+
+> Both demos run on InstaWP as **persistent** sandbox sites, with *Settings →
+> Reading → Discourage search engines* enabled on each (per the noindex
+> requirement — confirmed via the `robots: noindex, nofollow` meta on every
+> page). InstaWP may show a brief "Continue to site" interstitial on first
+> visit. If a demo is ever unavailable, each theme installs from this repo in
+> minutes (see [Install](#install-locally)).
 
 ## Why GeneratePress
 
