@@ -20,10 +20,6 @@
 		return;
 	}
 
-	targets.forEach( function ( el ) {
-		el.classList.add( 'is-reveal' );
-	} );
-
 	var observer = new IntersectionObserver(
 		function ( entries, obs ) {
 			entries.forEach( function ( entry ) {
@@ -37,6 +33,11 @@
 	);
 
 	targets.forEach( function ( el ) {
+		// Leave anything already in view untouched — no opacity flash, protects LCP.
+		if ( el.getBoundingClientRect().top < window.innerHeight ) {
+			return;
+		}
+		el.classList.add( 'is-reveal' );
 		observer.observe( el );
 	} );
 }() );
