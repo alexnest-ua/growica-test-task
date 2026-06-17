@@ -58,12 +58,14 @@ directory (no root) to drive installs and verification.
   footer and the single-post CTA.
 - **Console:** no errors/warnings on load.
 
-## What this plan deliberately does **not** do
+## Scope notes
 
-- No page builder, no block themes / `theme.json` (GeneratePress is a classic
-  PHP-template theme — the child stays classic).
-- No copying of parent template files where a hook achieves the same result.
-- No ACF Pro–only field types (repeater / flexible content) — free fields only.
-- No production hardening of the demo (caching, CDN, self-hosted fonts) beyond
-  what's reasonable for a take-home — noted as next steps in
+- The first cut was a minimal, hook-only GeneratePress child. The scope was then
+  expanded (on request) to a full template set, self-hosted fonts, a minified
+  CSS/JS pipeline, SEO + head cleanup, and progressive JS — see
   [decisions](06-decisions.en.md).
+- Still **classic, not block**: GeneratePress is a PHP-template theme, so the
+  children stay classic (no `theme.json`); no page builder.
+- The **header and footer stay hook-based** even though content templates are
+  overridden — only what each theme needs is duplicated.
+- ACF uses **free** field types only (no Pro repeater / flexible content).

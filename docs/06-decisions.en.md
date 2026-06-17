@@ -47,12 +47,26 @@ so colour, type and structure diverge naturally rather than arbitrarily:
 Visual polish was deliberately kept modest — the brief explicitly values
 functional and structural difference over looking pretty.
 
-## Hooks over template overrides
+## Templates: a deliberate override set
 
-No parent template files were copied. Header/footer/nav structure is achieved via
-GeneratePress hooks + CSS. This keeps each child minimal, avoids drift from the
-parent's markup, and preserves the parent's own hooks for plugins. (DRY / YAGNI:
-override only what's needed.)
+The original brief favours "override only what you need"; the expanded scope asks
+for a full, uniquely-designed template set to demonstrate the template hierarchy
+and reusable components. The tension is resolved as follows:
+
+- Each theme ships `page/single/archive/search/404/index.php` plus a
+  `template-parts/` folder of reusable components (entry header, post card,
+  no-results) pulled in with `get_template_part()`.
+- The **header and footer stay hook-based** — the templates call
+  `get_header()`/`get_footer()`, so the centred/split masthead and the custom
+  footers still come from `functions.php`; no `header.php`/`footer.php` is copied.
+- ACF is rendered **directly in the templates** (via `inc/template-tags.php`),
+  so it no longer depends on a GeneratePress content hook firing.
+- `generate_sidebar_layout` is forced to `no-sidebar` so each theme fully owns
+  its content layout in CSS.
+
+This is more surface than a pure-hook GP child needs — an intentional trade to
+show template-hierarchy fluency. It also reinforces de-footprinting: the two
+sites have genuinely different template markup, not just different CSS.
 
 ## ACF: Local JSON, free fields only
 
@@ -64,12 +78,47 @@ override only what's needed.)
 - Only **free** ACF field types are used (text, textarea, link, image,
   true/false, select) — no Pro-only Repeater/Flexible Content.
 
-## Fonts via Google Fonts CDN
+## Self-hosted fonts
 
-For a hosted demo, the Google Fonts CDN with `display=swap` + `preconnect` is the
-pragmatic choice. For production I would **self-host** the woff2 subset (privacy
-/ GDPR, one fewer third-party connection, better LCP) — noted as a next step, not
-done here to stay in scope.
+Each theme self-hosts its woff2 faces (latin subset) under `fonts/`, declared
+with `@font-face` + `font-display: swap`, and preloads the two above-the-fold
+faces via the `wp_preload_resources` filter. This removes the third-party Google
+Fonts connection (privacy / one less origin) and protects LCP/CLS.
+
+## Minified asset pipeline
+
+CSS and JS live as readable sources in `css/` and `js/`, built to `*.min`
+versions with `csso` / `terser`. The theme enqueues the minified files and serves
+the unminified sources when `SCRIPT_DEBUG` is on — idiomatic WordPress and easy to
+debug.
+
+## SEO + clean head (self-made, plugin-aware)
+
+Rather than depend on a plugin, each theme emits its own lightweight meta and
+strips WordPress fingerprints (generator/version, shortlink, RSD, WLW, emoji)
+from `<head>` — itself a de-footprinting measure. The **method differs per
+theme** (Verdal: meta description + Open Graph; Meridian Edge: Twitter Card +
+JSON-LD), and both **yield to a dedicated SEO plugin** (AIOSEO / Yoast / Rank
+Math) when one is active, to avoid duplicate tags. On the hosted demos a small,
+**different** plugin set per site extends the de-footprinting to the plugin layer.
+
+## Progressive-enhancement JS
+
+Each theme ships one small vanilla-JS enhancement, gated on `prefers-reduced-
+motion` and degrading to full functionality without JS: Verdal reveals
+below-the-fold cards with `IntersectionObserver` (above-the-fold content is left
+untouched to protect LCP); Meridian Edge condenses its header on scroll. Two
+different behaviours, no shared code.
+
+## De-footprinting the two themes (after review)
+
+A code review of the first cut flagged that the two themes shared identical
+comments and a byte-identical helper — one author's find-and-replace. They were
+rebuilt to read as independent work: different comment voice (Verdal prose
+banners vs Meridian Edge terse markers), different function naming and code
+organisation, a different SEO method, different JS, and different template
+markup — on top of the already-distinct palettes, fonts, headers, footers and
+ACF groups.
 
 ## Bugs found during verification (and fixed)
 

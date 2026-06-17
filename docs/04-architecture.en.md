@@ -6,77 +6,123 @@
 
 ```text
 growica-test-task/
-├── README.md / README.uk.md          # overview + parent rationale + install + live links
-├── .editorconfig                      # tabs for PHP/CSS/JS (WordPress Coding Standards)
-├── .gitignore                         # secrets, build artefacts, the private brief
-├── docs/
-│   ├── 01-requirements.{en,uk}.md
-│   ├── 02-solution.{en,uk}.md         # Part 1 essay
-│   ├── 03-implementation-plan.{en,uk}.md
-│   ├── 04-architecture.{en,uk}.md     # (this file)
-│   ├── 05-database.{en,uk}.md
-│   └── 06-decisions.{en,uk}.md
+├── README.md / README.uk.md
+├── .editorconfig / .gitignore
+├── docs/                              # bilingual docs (01–06, *.en.md / *.uk.md)
 └── themes/
     ├── verdal/                        # Child theme A — editorial / wellness
-    │   ├── style.css                  # theme header + full stylesheet (tokens + classes)
-    │   ├── functions.php              # enqueue, nav location, footer, ACF wiring
-    │   └── acf-json/
-    │       └── group_verdal_page_intro.json
-    └── meridian-edge/                 # Child theme B — product / tech
-        ├── style.css
-        ├── functions.php
-        └── acf-json/
-            └── group_meridian_edge_cta.json
+    └── meridian-edge/                 # Child theme B — product / engineering
 ```
 
-Themes are installed by copying a single folder from `themes/` into
-`wp-content/themes/`. Each is a **classic** GeneratePress child theme — no build
-step, no block theme / `theme.json`.
+Each child theme has the same shape (a full classic template set), so they are
+directly comparable while sharing no footprint:
+
+```text
+themes/<theme>/
+├── style.css                # theme header only (unique per theme)
+├── functions.php            # setup, asset pipeline, hooks, SEO/clean-head, ACF wiring, footer
+├── inc/
+│   └── template-tags.php     # reusable render helpers (entry meta, ACF block, SEO description)
+├── template-parts/
+│   ├── entry-header.php       # title (+ post meta) — reused by single & page
+│   ├── content.php            # single post body
+│   ├── content-card.php       # post card — reused by blog / archive / search
+│   └── content-none.php       # empty-state — reused by blog / archive / search
+├── page.php  single.php  archive.php  search.php  404.php  index.php
+├── css/
+│   ├── main.css               # source
+│   └── main.min.css           # built (enqueued)
+├── js/
+│   ├── theme.js               # source
+│   └── theme.min.js           # built (enqueued)
+├── fonts/                      # self-hosted woff2 (latin subset)
+└── acf-json/                   # ACF Local JSON (auto-loaded, reproducible)
+```
+
+No build step is required to install a theme — the `*.min` files are committed.
+`csso` / `terser` are only needed to rebuild them from source.
 
 ## Child-theme anatomy
 
-| File | Responsibility |
+| Path | Responsibility |
 |------|----------------|
-| `style.css` | Required WordPress theme header (unique per theme) **plus** the full stylesheet: design tokens in `:root`, reusable BEM-ish classes, Flexbox layout, `rem` units, focus-visible, reduced-motion. |
-| `functions.php` | Theme setup (i18n, footer menu), asset enqueue, navigation placement, ACF load point + render, custom footer. All output escaped. |
-| `acf-json/*.json` | ACF **Local JSON** — the field group definition, version-controlled and auto-loaded. |
+| `style.css` | Required WordPress theme header (unique Name/Author/Description/Version); styles live in `css/`. |
+| `functions.php` | Theme setup (i18n, footer menu, card image size), asset enqueue, font preload, nav/layout filters, ACF load point, SEO + clean-head, the custom footer. |
+| `inc/template-tags.php` | Reusable render helpers called from the templates. |
+| `template-parts/*` | Components pulled in with `get_template_part()` and reused across templates. |
+| `*.php` templates | The template hierarchy: page, single, archive, search, 404, index. |
+| `css/`, `js/` | Source + minified assets. |
+| `fonts/` | Self-hosted woff2. |
+| `acf-json/` | ACF Local JSON field group. |
 
-## Parent → child style enqueue (a deliberate detail)
+## Asset pipeline
 
-GeneratePress enqueues its own CSS under the handle **`generate-style`** (from
-`assets/css/`, *not* from its `style.css`). So the child does **not** blindly
-re-enqueue a parent `style.css` (which contains no CSS). Instead it enqueues its
-own stylesheet declaring the parent handle as a dependency, so it always loads
-after the parent:
+Readable sources (`css/main.css`, `js/theme.js`) are minified to `*.min` files
+with `csso` and `terser`. `functions.php` enqueues the minified files, and serves
+the unminified sources when `SCRIPT_DEBUG` is enabled:
 
 ```php
-wp_enqueue_style( 'verdal-style', get_stylesheet_uri(), array( 'generate-style' ), VERDAL_VERSION );
+$min = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+wp_enqueue_style( 'verdal-main', "{$uri}/css/main{$min}.css", array( 'generate-style' ), VERDAL_VERSION );
 ```
 
-Fonts are enqueued separately (Google Fonts, `display=swap`) with `preconnect`
-resource hints via the `wp_resource_hints` filter.
+The stylesheet depends on the parent handle **`generate-style`** — GeneratePress
+enqueues its own CSS under that handle (from `assets/css/`, not its `style.css`),
+so the child loads after it without re-enqueuing an empty parent stylesheet.
+
+## Self-hosted fonts
+
+Fonts are shipped as woff2 (latin) under `fonts/`, declared with `@font-face` +
+`font-display: swap` in `main.css`, and the two above-the-fold faces are preloaded
+via the `wp_preload_resources` filter — removing the third-party Google Fonts
+connection and protecting LCP/CLS.
+
+## Templates & reusable parts
+
+The templates own the content area; the header and footer remain hook-based:
+
+- Every template calls `get_header()` / `get_footer()`, so the masthead and the
+  custom footer still come from `functions.php` hooks (no `header.php`/`footer.php`).
+- Shared markup lives in `template-parts/` and is pulled in with
+  `get_template_part()` (e.g. the post card is reused by blog, archive and search).
+- ACF is rendered **directly in the templates** via `inc/template-tags.php`, so it
+  does not depend on a GeneratePress content hook firing.
+- `generate_sidebar_layout` is forced to `no-sidebar`; each theme controls its
+  content measure in CSS.
 
 ## Hooks & filters used (override only what's needed)
 
 | Concern | Mechanism | Verdal (A) | Meridian Edge (B) |
 |---------|-----------|------------|-------------------|
-| Nav position | `generate_navigation_location` filter | `nav-below-header` (centred) | `nav-float-right` (logo-left/menu-right) |
-| Footer | `remove_action` GP footer + `add_action('generate_footer', …)` | 3 columns + centred copyright | dark 4 columns + split bottom bar |
-| Footer-hook removal timing | deferred to `after_setup_theme` | ✔ | ✔ |
-| ACF source | `acf/settings/load_json` → theme `acf-json/` | ✔ | ✔ |
-| ACF render | `generate_after_entry_header` | page intro | — |
-| ACF render | `generate_after_content` | — | single-post CTA |
+| Nav position | `generate_navigation_location` | `nav-below-header` (centred) | `nav-float-right` (logo-left/menu-right) |
+| Layout | `generate_sidebar_layout` | `no-sidebar` | `no-sidebar` |
+| Footer | remove GP footer + `add_action('generate_footer', …)` (removal deferred to `after_setup_theme`) | 3 columns + centred copyright | dark 4 columns + split bottom bar |
+| Font preload | `wp_preload_resources` | Lora 600 + Mulish 400 | Space Grotesk 600 + IBM Plex 400 |
+| ACF source | `acf/settings/load_json` → `acf-json/` | ✔ | ✔ |
+| ACF render | in-template (`inc/template-tags.php`) | page intro on `page.php` | post CTA on `single.php` |
 | Footer menu | `register_nav_menus('footer-menu')` | ✔ | ✔ |
+| Head cleanup | `init` / `wp_head` | strip generator/shortlink/RSD/WLW/emoji | same intent, own implementation |
 
-> **Load-order note:** a WordPress child theme's `functions.php` loads *before*
-> the parent's. GeneratePress registers its footer callbacks at parent load
-> time, so the `remove_action()` calls are deferred to `after_setup_theme` —
-> otherwise they would run too early and no-op. (This was caught in browser
-> testing; see [decisions](06-decisions.en.md).)
+## SEO & clean head
 
-No parent template files are copied — header, footer and navigation structure
-are all achieved through hooks/filters + CSS, which keeps the children lean and
-the divergence purely additive.
+Each theme emits its own lightweight metadata and strips WordPress fingerprints
+from `<head>`. The **method differs per theme** and both yield to a dedicated SEO
+plugin (AIOSEO / Yoast / Rank Math) when one is active:
+
+- **Verdal** → meta description + Open Graph.
+- **Meridian Edge** → Twitter Card + schema.org JSON-LD (Article / WebSite),
+  encoded with `wp_json_encode( …, JSON_HEX_TAG | JSON_HEX_AMP )` so a title
+  containing `</script>` cannot break out of the script block.
+
+## Progressive-enhancement JS
+
+One small vanilla-JS enhancement per theme, reduced-motion aware, degrading to
+full functionality without JS:
+
+- **Verdal** — reveal below-the-fold cards/intro with `IntersectionObserver`
+  (above-the-fold content is left untouched to protect LCP).
+- **Meridian Edge** — condensing sticky header on scroll (rAF-throttled, passive
+  listener; the sticky CSS is opted in only when JS runs).
 
 ## Differentiation matrix (no shared footprint)
 
@@ -86,26 +132,28 @@ the divergence purely additive.
 | Background / ink | `#f4f7f4` / `#18271f` (warm green) | `#ffffff` / `#14161f` (cool ink) |
 | Primary | `#1f6b53` teal-green | `#2348c8` cobalt |
 | Heading font | Lora (serif) | Space Grotesk (grotesque) |
-| Body font | Mulish (humanist sans) | IBM Plex Sans |
+| Body font | Mulish | IBM Plex Sans |
 | Header | Centred logo, nav centred below | Logo left, uppercase nav right |
 | Footer | Light, 3 columns, centred italic copyright | Dark, 4 columns, copyright left + back-to-top |
-| Copyright string | "© {y} {site}. Made calmly, by hand." | "© {y} {site}. Built for speed." |
-| Text domain | `verdal` | `meridian-edge` |
-| CSS prefix | `--vd-*`, `.verdal-*` | `--me-*`, `.me-*` |
-| Function prefix | `verdal_*` | `meridian_edge_*` |
-| `style.css` Author / Version | Sagewright Studio / 1.0.3 | Brightseam Labs / 2.1.0 |
-| ACF group | Page Intro on **pages**, 5 fields | Post CTA Banner on **posts**, 6 fields + conditional logic |
+| Copyright | "© {y} {site}. Made calmly, by hand." | "© {y} {site}. Built for speed." |
+| SEO method | meta description + Open Graph | Twitter Card + JSON-LD |
+| JS | reveal-on-scroll | condensing sticky header |
+| Card style | soft, rounded, media-top | sharp "spec-sheet", uppercase byline |
+| Comment voice | prose banner comments | terse lowercase markers |
+| Text domain / prefixes | `verdal`, `--vd-*`, `.verdal-*`, `verdal_*` | `meridian-edge`, `--me-*`, `.me-*`, `meridian_edge_*` |
+| `style.css` Author / Version | Sagewright Studio / 1.1.0 | Brightseam Labs / 2.2.0 |
+| ACF group | Page Intro on pages, 5 fields | Post CTA Banner on posts, 6 fields + conditional logic |
 
-There are **no shared comments, signatures, prefixes or class names** between the
-two themes — the `style.css` headers and all identifiers are independent.
+The themes share **no authored comments, docblocks, helper bodies, section-comment
+style, prefixes or class names** — only unavoidable WordPress/CSS API surface
+(e.g. the WPCS `translators:` comment format, `@font-face`, hook argument keys).
 
 ## Output safety & accessibility
 
-- Every dynamic value is escaped at output: `esc_html`, `esc_attr`, `esc_url`,
-  and `esc_html__` / `printf` for translatable strings.
-- ACF link/image arrays are null-checked before use; the image renders with
-  `alt`, `width`/`height` (no CLS) and `loading="lazy"`.
-- Semantic landmarks: a single `<footer>` per page, `<nav aria-label>` for the
-  footer menu, `<aside>` for the CTA. Focus-visible outlines, ≥44px touch
-  targets on buttons, AA-contrast palettes, and `prefers-reduced-motion`
-  handling.
+- Every dynamic value is escaped at output (`esc_html` / `esc_attr` / `esc_url` /
+  `esc_html__` / `wp_kses_post`); ACF link/image arrays are null-checked.
+- One `<h1>` per view, logical heading order, one `<main>`, `<nav aria-label>`
+  landmarks, `<article>` / `<aside>` / `<footer>` semantics.
+- Focus-visible outlines, ≥44px touch targets, AA-contrast palettes, alt text,
+  `prefers-reduced-motion` handling, and a `screen-reader-text` utility for
+  context links.

@@ -62,6 +62,21 @@ live links in the README.
   <alexnest2002@gmail.com>; public repo; step-by-step conventional commits; no
   secrets committed.
 
+## Additional requirements (expanded scope)
+
+Requested after the original brief and delivered in this repo:
+
+- A full, uniquely-designed **template set** per theme (`page/single/archive/
+  search/404/index`) on **reusable `template-parts/`**.
+- **Self-hosted fonts** with `font-display: swap` (better CLS/LCP).
+- Separate **`css/` and `js/`** folders with **minified + unminified** builds;
+  only the minified files are enqueued (unminified under `SCRIPT_DEBUG`).
+- Best-practice **HTML5 / CSS / JS / accessibility / SEO / semantics**.
+- WordPress professionalism via a **curated, per-demo plugin set** and/or
+  **self-made `functions.php`** equivalents (SEO meta, head cleanup).
+- **Unique content** and royalty-free **placeholder images** per demo.
+- **Comprehensive bilingual documentation** (this `docs/` set, EN + UK).
+
 ## Acceptance criteria ("done")
 
 1. Two child themes that share **no footprint**: distinct `style.css` headers,
