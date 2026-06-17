@@ -209,6 +209,18 @@ function meridian_edge_footer() {
 	</footer>
 	<?php
 }
-remove_action( 'generate_footer', 'generate_construct_footer_widgets', 5 );
-remove_action( 'generate_footer', 'generate_construct_footer', 10 );
 add_action( 'generate_footer', 'meridian_edge_footer' );
+
+/**
+ * Remove GeneratePress' default footer widgets and site-info credit so only the
+ * custom footer renders.
+ *
+ * Deferred to after_setup_theme: the parent registers these callbacks while its
+ * functions.php loads, which happens *after* the child's, so removing them at
+ * child parse time would be a no-op.
+ */
+function meridian_edge_replace_footer_hooks() {
+	remove_action( 'generate_footer', 'generate_construct_footer_widgets', 5 );
+	remove_action( 'generate_footer', 'generate_construct_footer', 10 );
+}
+add_action( 'after_setup_theme', 'meridian_edge_replace_footer_hooks' );
