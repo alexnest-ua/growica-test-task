@@ -54,6 +54,7 @@
 	--me-primary-strong: #16329b;
 	--me-accent: #3c6bff;
 	--me-line: #e2e6f0;
+	--me-field-border: #5b6573; /* form-control border — ≥3:1 non-text contrast (WCAG 1.4.11) */
 	--me-line-strong: #cdd4e6;
 
 	--me-footer-bg: #14161f;
@@ -870,7 +871,7 @@ img {
 .search-form .search-field {
 	min-height: 2.75rem;
 	padding: 0.5rem 0.9rem;
-	border: 1px solid var(--me-line);
+	border: 1px solid var(--me-field-border);
 	border-radius: var(--me-radius);
 	font-family: var(--me-font-body);
 	font-size: 1rem;
@@ -891,6 +892,19 @@ img {
 .search-form .search-submit:hover {
 	background-color: var(--me-primary-strong);
 	border-color: var(--me-primary-strong);
+}
+
+/* form fields — visible border meeting WCAG non-text contrast (>= 3:1) */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="number"],
+input[type="password"],
+textarea {
+	border: 1px solid var(--me-field-border);
+	border-radius: var(--me-radius);
 }
 
 /* responsive (mobile-first) */

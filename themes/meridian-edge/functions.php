@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ME_VERSION', '2.3.1' );
+define( 'ME_VERSION', '2.3.2' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
