@@ -91,12 +91,18 @@ with `@font-face` + `font-display: swap`, and preloads the two above-the-fold
 faces via the `wp_preload_resources` filter. This removes the third-party Google
 Fonts connection (privacy / one less origin) and protects LCP/CLS.
 
-## Minified asset pipeline
+## Minified, self-contained asset pipeline
 
-CSS and JS live as readable sources in `css/` and `js/`, built to `*.min`
-versions with `csso` / `terser`. The theme enqueues the minified files and serves
-the unminified sources when `SCRIPT_DEBUG` is on — idiomatic WordPress and easy to
-debug.
+CSS and JS live as readable sources in `css/main.css` and `js/theme.js`. A small,
+reproducible build (`bin/build-assets.sh`, using `csso` / `terser`) fuses each
+child's source with the vendored parent code into **one bundle per type**:
+`main.min.css` = GeneratePress framework CSS + that site's dynamic preset
+snapshot + GP's comments-component sheet + the child's styles; `theme.min.js` =
+the parent menu + a11y scripts + the child's enhancement. The vendored parent inputs live in `bin/vendor/`,
+**outside any theme directory**, so they are never web-served on their own and
+carry no comment banner that could leak the parent's name into a bundle. The theme
+enqueues only the single bundle per type — which is also what lets the page drop
+the parent's separate asset references entirely (see below).
 
 ## A lean document head (after review)
 
@@ -144,6 +150,67 @@ banners vs Meridian Edge terse markers), different function naming and code
 organisation, a different SEO method, different JS, and different template
 markup — on top of the already-distinct palettes, fonts, headers, footers and
 ACF groups.
+
+## Removing the GeneratePress parent footprint (after review)
+
+A later review flagged the deepest shared trace: both demos referenced the parent
+**identically** — same path `/wp-content/themes/generatepress/…`, same handle
+`generate-style`, same `?ver=3.6.1`. On a 30-site network that exact URL is a
+trivial cross-site cluster key, even though the *child* assets already differed.
+The fix makes each child fully self-contained and strips every parent reference
+from the rendered HTML, while keeping the required parent→child architecture.
+
+Per child, in `functions.php`:
+
+- **Self-contained bundle** — framework CSS, the site's dynamic preset snapshot,
+  GP's comments-component sheet and the child's own CSS are fused into one
+  `main.min.css`; the parent menu + a11y scripts and the child's enhancement into
+  one `theme.min.js` (see the pipeline above). The page now loads only the child's
+  own files. (GP serves the comments sheet on demand on singular views with open
+  comments — which the mask below also strips — so it is folded in; the themes use
+  no other on-demand GP component, so nothing else needs bundling.)
+- **Mask the parent's copies** — `*_mask_parent_assets()` dequeues any style or
+  script whose source lives in the parent directory, plus the parent-injected
+  link to the child `style.css`. The GP menu config object is re-emitted under a
+  per-site variable name (`vdMenuCfg` / `meMenuCfg`); GP's inline "using-mouse"
+  helper — printed directly on `wp_footer` with a hard-coded `id="generate-a11y"`,
+  so a dequeue can't reach it — is switched off through its own
+  `generate_print_a11y_script` filter, since the same behaviour ships in the
+  bundle.
+- **Body classes** — a `body_class` filter drops `wp-theme-generatepress` and
+  `wp-child-theme-*`.
+- **Speculation rules** — WordPress hard-codes the active template + stylesheet
+  directories into the `<script type="speculationrules">` exclusion list and
+  exposes no filter over the final rules, so the parent path can't be removed
+  surgically. The block is disabled (`wp_speculation_rules_configuration` →
+  `null`), which also stops it advertising the theme directory layout;
+  prefetch-on-hover is a minor nicety these lean pages don't need.
+
+**Result (verified in-browser on both live demos).** The source HTML of every
+page — home, journal, about — contains **zero** occurrences of `generatepress`,
+`generate-*`, `/themes/generatepress/`, `?ver=3.6.1`, the `generatepressMenu`
+variable or the `wp-theme-generatepress` body class. The only per-site traces
+left — the bundle URLs, their versions and the inline menu-config variable —
+**differ between the two sites** in path, version and name, exactly as the child
+assets always did. Layout, the mobile menu toggle and the enhancement JS were all
+confirmed working after the change.
+
+**Honest residuals.** Two traces are inherent to the brief's requirement to build
+on a shared parent, and are called out rather than hidden:
+
+- GeneratePress still renders generic framework **class names** in its markup
+  (`grid-container`, `main-navigation`, `gp-icon`, `sf-menu`, the
+  `separate-containers` body class). These are shared by millions of GP sites, so
+  they are *not* a per-network cluster key the way the now-removed unique
+  path + version was. Erasing them entirely means forking GP into a standalone
+  theme — which the parent + two-children brief forbids.
+- The child `style.css` keeps the WordPress-required `Template: generatepress`
+  header. It is fetchable only by requesting that file directly and never appears
+  in any rendered page.
+
+At true network scale the complete answer is also to **vary the parent** across
+sites (see [the honest tension](#the-honest-tension-one-parent-for-two-children)),
+which removes even the class-name commonality.
 
 ## Bugs found during verification (and fixed)
 

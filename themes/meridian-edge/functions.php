@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ME_VERSION', '2.3.2' );
+define( 'ME_VERSION', '2.4.0' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
@@ -37,20 +37,36 @@ function me_after_setup_theme() {
 add_action( 'after_setup_theme', 'me_after_setup_theme' );
 
 /**
- * Enqueue the compiled stylesheet and the deferred enhancement script.
+ * Enqueue the self-contained stylesheet and the deferred enhancement script.
  *
- * The stylesheet is chained behind GeneratePress' "generate-style" handle so it
- * always wins the cascade. SCRIPT_DEBUG swaps the readable sources in for the
- * minified files; fonts are self-hosted through @font-face in main.css.
+ * Both files are produced by bin/build-assets.sh. The stylesheet fuses the
+ * GeneratePress framework CSS, this site's dynamic preset snapshot and Meridian
+ * Edge's own styles into one bundle; the script fuses the parent menu + a11y
+ * behaviour and the sticky-header enhancement into another. Serving the
+ * framework from the child's own assets keeps every parent-theme URL, handle and
+ * version out of the page — the parent's copies are removed in
+ * me_mask_parent_assets(). The menu toggle reads its labels from an inline
+ * config object emitted under a theme-specific variable name.
  *
  * @return void
  */
 function me_enqueue_assets() {
-	$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
-	$base   = get_stylesheet_directory_uri();
+	$base = get_stylesheet_directory_uri();
 
-	wp_enqueue_style( 'meridian-edge', "{$base}/css/main{$suffix}.css", array( 'generate-style' ), ME_VERSION );
-	wp_enqueue_script( 'meridian-edge', "{$base}/js/theme{$suffix}.js", array(), ME_VERSION, true );
+	wp_enqueue_style( 'meridian-edge', "{$base}/css/main.min.css", array(), ME_VERSION );
+	wp_enqueue_script( 'meridian-edge', "{$base}/js/theme.min.js", array(), ME_VERSION, true );
+
+	wp_add_inline_script(
+		'meridian-edge',
+		'var meMenuCfg = ' . wp_json_encode(
+			array(
+				'toggleOpenedSubMenus' => true,
+				'openSubMenuLabel'     => __( 'Open Sub-Menu', 'meridian-edge' ),
+				'closeSubMenuLabel'    => __( 'Close Sub-Menu', 'meridian-edge' ),
+			)
+		) . ';',
+		'before'
+	);
 }
 add_action( 'wp_enqueue_scripts', 'me_enqueue_assets', 20 );
 
@@ -73,6 +89,49 @@ function me_dequeue_block_css() {
 	}
 }
 add_action( 'wp_enqueue_scripts', 'me_dequeue_block_css', 100 );
+
+/**
+ * Drop every asset the parent theme would expose in the page source.
+ *
+ * GeneratePress serves its framework CSS, dynamic preset CSS, menu script and
+ * a11y helper from /wp-content/themes/generatepress/ under shared "generate-*"
+ * handles and a shared "?ver" — the identical path + version that clusters
+ * sites across a network. Meridian Edge re-serves all of it from its own bundle
+ * (see me_enqueue_assets() and bin/build-assets.sh), so the parent copies are
+ * removed here: any style or script whose source lives in the parent directory,
+ * plus the inline-only a11y handle and the parent-injected child style.css link.
+ */
+function me_mask_parent_assets() {
+	$parent = '/themes/' . get_template() . '/';
+
+	foreach ( (array) wp_styles()->queue as $handle ) {
+		$src = isset( wp_styles()->registered[ $handle ] ) ? (string) wp_styles()->registered[ $handle ]->src : '';
+		if ( '' !== $src && false !== strpos( $src, $parent ) ) {
+			wp_dequeue_style( $handle );
+		}
+	}
+
+	foreach ( (array) wp_scripts()->queue as $handle ) {
+		$src = isset( wp_scripts()->registered[ $handle ] ) ? (string) wp_scripts()->registered[ $handle ]->src : '';
+		if ( '' !== $src && false !== strpos( $src, $parent ) ) {
+			wp_dequeue_script( $handle );
+		}
+	}
+
+	// The parent injects the child style.css under its own "generate-child"
+	// handle (its source is the child directory, not the parent), so it slips
+	// past the source check above — drop it by name.
+	wp_dequeue_style( 'generate-child' );
+}
+add_action( 'wp_enqueue_scripts', 'me_mask_parent_assets', 100 );
+
+/*
+ * Suppress GeneratePress' inline "using-mouse" focus helper. The parent prints
+ * it directly on wp_footer with a hard-coded id="generate-a11y" — not through
+ * the script queue, so a dequeue cannot reach it. The identical behaviour ships
+ * inside Meridian Edge's bundle, so the parent copy is disabled via its filter.
+ */
+add_filter( 'generate_print_a11y_script', '__return_false' );
 
 /**
  * Preload the heading + body faces used above the fold to steady LCP and CLS.
@@ -180,6 +239,35 @@ function me_trim_head() {
 	add_filter( 'the_generator', '__return_empty_string' );
 }
 add_action( 'init', 'me_trim_head' );
+
+/**
+ * Strip body classes that name the underlying framework.
+ *
+ * WordPress adds "wp-theme-generatepress" and "wp-child-theme-meridian-edge" to
+ * every page; the first is a parent-theme fingerprint shared across the network,
+ * the second advertises the child relationship. Neither drives styling, so both
+ * are removed.
+ *
+ * @param string[] $classes Body classes.
+ * @return string[]
+ */
+function me_body_class( $classes ) {
+	return array_values( array_diff( $classes, array( 'wp-theme-generatepress', 'wp-child-theme-meridian-edge' ) ) );
+}
+add_filter( 'body_class', 'me_body_class' );
+
+/*
+ * Disable WordPress speculative loading.
+ *
+ * The <script type="speculationrules"> block hard-codes the active template and
+ * stylesheet directories into its exclusion list; those base paths are merged
+ * in after the href-exclude filter, and WordPress exposes no filter on the
+ * final rules array, so the parent name cannot be removed while keeping the
+ * feature. Returning null from the configuration filter omits the block
+ * entirely — which also stops it advertising the theme directory layout.
+ * Prefetch-on-hover is a minor nicety the lean static pages here do not need.
+ */
+add_filter( 'wp_speculation_rules_configuration', '__return_null' );
 
 /**
  * Emit Twitter Card meta plus a schema.org JSON-LD node.

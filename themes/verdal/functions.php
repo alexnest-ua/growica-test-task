@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'VERDAL_VERSION', '1.2.3' );
+define( 'VERDAL_VERSION', '1.3.0' );
 
 require get_stylesheet_directory() . '/inc/template-tags.php';
 
@@ -35,19 +35,36 @@ function verdal_setup() {
 add_action( 'after_setup_theme', 'verdal_setup' );
 
 /**
- * Enqueue the minified stylesheet and progressive-enhancement script.
+ * Enqueue the self-contained stylesheet and enhancement script.
  *
- * GeneratePress enqueues its own CSS under the handle "generate-style" (from
- * assets/css/, not its style.css), so the child stylesheet declares that handle
- * as a dependency to load after it. Self-hosted fonts are declared with
- * @font-face inside main.css. Under SCRIPT_DEBUG the unminified sources load.
+ * Both files are produced by bin/build-assets.sh. The stylesheet fuses the
+ * GeneratePress framework CSS, this site's dynamic preset snapshot and Verdal's
+ * own styles into one bundle; the script fuses the parent menu + a11y behaviour
+ * and Verdal's enhancement into another. Shipping the framework inside the
+ * child's own assets means the page references no parent-theme URL, handle or
+ * version — the parent's own copies are dropped in verdal_mask_parent_assets().
+ *
+ * The menu toggle reads its labels from an inline config object emitted under a
+ * theme-specific variable name, so nothing in the output names the framework.
+ * Self-hosted fonts are declared with @font-face inside the bundle.
  */
 function verdal_assets() {
-	$min = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 	$uri = get_stylesheet_directory_uri();
 
-	wp_enqueue_style( 'verdal-main', "{$uri}/css/main{$min}.css", array( 'generate-style' ), VERDAL_VERSION );
-	wp_enqueue_script( 'verdal-theme', "{$uri}/js/theme{$min}.js", array(), VERDAL_VERSION, true );
+	wp_enqueue_style( 'verdal-main', "{$uri}/css/main.min.css", array(), VERDAL_VERSION );
+	wp_enqueue_script( 'verdal-theme', "{$uri}/js/theme.min.js", array(), VERDAL_VERSION, true );
+
+	wp_add_inline_script(
+		'verdal-theme',
+		'var vdMenuCfg = ' . wp_json_encode(
+			array(
+				'toggleOpenedSubMenus' => true,
+				'openSubMenuLabel'     => __( 'Open Sub-Menu', 'verdal' ),
+				'closeSubMenuLabel'    => __( 'Close Sub-Menu', 'verdal' ),
+			)
+		) . ';',
+		'before'
+	);
 }
 add_action( 'wp_enqueue_scripts', 'verdal_assets', 20 );
 
@@ -77,6 +94,50 @@ function verdal_trim_block_styles() {
 	wp_dequeue_style( 'wp-block-library-theme' );
 }
 add_action( 'wp_enqueue_scripts', 'verdal_trim_block_styles', 100 );
+
+/**
+ * Drop every asset the parent theme would expose in the page source.
+ *
+ * GeneratePress serves its framework CSS, the dynamic preset CSS, its menu
+ * script and an a11y helper from /wp-content/themes/generatepress/ under shared
+ * "generate-*" handles and a shared "?ver". Across a network that identical
+ * path + version is the obvious cross-site fingerprint. Verdal re-serves all of
+ * that from its own single bundle (see verdal_assets() and bin/build-assets.sh),
+ * so here the parent's copies are removed: every style or script whose source
+ * lives in the parent directory, plus the inline-only a11y handle and the
+ * parent-injected link to the child style.css.
+ */
+function verdal_mask_parent_assets() {
+	$parent = '/themes/' . get_template() . '/';
+
+	foreach ( (array) wp_styles()->queue as $handle ) {
+		$src = isset( wp_styles()->registered[ $handle ] ) ? (string) wp_styles()->registered[ $handle ]->src : '';
+		if ( '' !== $src && false !== strpos( $src, $parent ) ) {
+			wp_dequeue_style( $handle );
+		}
+	}
+
+	foreach ( (array) wp_scripts()->queue as $handle ) {
+		$src = isset( wp_scripts()->registered[ $handle ] ) ? (string) wp_scripts()->registered[ $handle ]->src : '';
+		if ( '' !== $src && false !== strpos( $src, $parent ) ) {
+			wp_dequeue_script( $handle );
+		}
+	}
+
+	// The parent injects the child style.css under its own "generate-child"
+	// handle (its source is the child directory, not the parent), so it slips
+	// past the source check above — drop it by name.
+	wp_dequeue_style( 'generate-child' );
+}
+add_action( 'wp_enqueue_scripts', 'verdal_mask_parent_assets', 100 );
+
+/*
+ * Suppress GeneratePress' inline "using-mouse" focus helper. The parent prints
+ * it directly on wp_footer with a hard-coded id="generate-a11y" — not through
+ * the script queue, so a dequeue cannot reach it. The identical behaviour ships
+ * inside Verdal's bundle, so the parent copy is disabled through its own filter.
+ */
+add_filter( 'generate_print_a11y_script', '__return_false' );
 
 /**
  * Preload the two above-the-fold font files (heading + body) to protect LCP/CLS.
@@ -169,6 +230,36 @@ function verdal_clean_head() {
 	add_filter( 'the_generator', '__return_empty_string' );
 }
 add_action( 'init', 'verdal_clean_head' );
+
+/**
+ * Strip body classes that name the underlying framework.
+ *
+ * WordPress adds "wp-theme-generatepress" and "wp-child-theme-verdal" to every
+ * page. The first is a literal parent-theme fingerprint shared with every site
+ * on the framework; the second advertises the child relationship. Neither is
+ * used for styling — Verdal scopes its own classes — so both are removed.
+ *
+ * @param string[] $classes Body classes.
+ * @return string[]
+ */
+function verdal_body_class( $classes ) {
+	return array_values( array_diff( $classes, array( 'wp-theme-generatepress', 'wp-child-theme-verdal' ) ) );
+}
+add_filter( 'body_class', 'verdal_body_class' );
+
+/*
+ * Disable WordPress speculative loading.
+ *
+ * The <script type="speculationrules"> block hard-codes the active template and
+ * stylesheet directories into its exclusion list ("/wp-content/themes/
+ * generatepress/*" plus the child path). Those base paths are merged in after
+ * the href-exclude filter, and WordPress exposes no filter on the final rules
+ * array, so the parent name cannot be removed while keeping the feature.
+ * Returning null from the configuration filter omits the block entirely — which
+ * also stops it advertising the theme directory layout. Prefetch-on-hover is a
+ * minor nicety the lean static pages here do not need.
+ */
+add_filter( 'wp_speculation_rules_configuration', '__return_null' );
 
 /**
  * Lightweight SEO: a meta description plus Open Graph tags.

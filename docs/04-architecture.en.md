@@ -8,6 +8,7 @@
 growica-test-task/
 ├── README.md / README.uk.md
 ├── .editorconfig / .gitignore
+├── bin/                               # reproducible asset build + vendored parent inputs (never web-served)
 ├── docs/                              # bilingual docs (01–06, *.en.md / *.uk.md)
 └── themes/
     ├── verdal/                        # Child theme A — editorial / wellness
@@ -39,8 +40,8 @@ themes/<theme>/
 └── acf-json/                   # ACF Local JSON (auto-loaded, reproducible)
 ```
 
-No build step is required to install a theme — the `*.min` files are committed.
-`csso` / `terser` are only needed to rebuild them from source.
+No build step is required to install a theme — the `*.min` bundles are committed.
+`bin/build-assets.sh` (using `csso` / `terser`) only rebuilds them from source.
 
 ## Child-theme anatomy
 
@@ -55,20 +56,38 @@ No build step is required to install a theme — the `*.min` files are committed
 | `fonts/` | Self-hosted woff2. |
 | `acf-json/` | ACF Local JSON field group. |
 
-## Asset pipeline
+## Asset pipeline & parent-footprint removal
 
-Readable sources (`css/main.css`, `js/theme.js`) are minified to `*.min` files
-with `csso` and `terser`. `functions.php` enqueues the minified files, and serves
-the unminified sources when `SCRIPT_DEBUG` is enabled:
+Each child is served as **one self-contained bundle per type**, built from its
+readable sources by `bin/build-assets.sh` (`csso` / `terser`):
+
+- `css/main.min.css` = GeneratePress framework CSS + the site's dynamic preset
+  snapshot + GP's comments component + the child's own CSS;
+- `js/theme.min.js` = the parent menu + a11y scripts (menu config variable renamed
+  per site) + the child's enhancement.
+
+The vendored parent inputs live in `bin/vendor/`, **outside any theme directory**,
+so they are never web-served alone. Because the framework now ships inside the
+child's own bundle, `functions.php` enqueues only that bundle and removes every
+separate parent reference from the page:
 
 ```php
-$min = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
-wp_enqueue_style( 'verdal-main', "{$uri}/css/main{$min}.css", array( 'generate-style' ), VERDAL_VERSION );
+// enqueue only the child's own bundle — no generate-style dependency
+wp_enqueue_style( 'verdal-main', "{$uri}/css/main.min.css", array(), VERDAL_VERSION );
+wp_enqueue_script( 'verdal-theme', "{$uri}/js/theme.min.js", array(), VERDAL_VERSION, true );
+
+add_action( 'wp_enqueue_scripts', 'verdal_mask_parent_assets', 100 ); // drop parent-dir assets + generate-child
+add_filter( 'body_class', 'verdal_body_class' );                       // strip wp-theme-generatepress
+add_filter( 'generate_print_a11y_script', '__return_false' );          // GP a11y ships in the bundle instead
+add_filter( 'wp_speculation_rules_configuration', '__return_null' );   // drops the theme-path speculation block
 ```
 
-The stylesheet depends on the parent handle **`generate-style`** — GeneratePress
-enqueues its own CSS under that handle (from `assets/css/`, not its `style.css`),
-so the child loads after it without re-enqueuing an empty parent stylesheet.
+The result: the rendered HTML carries no `/themes/generatepress/` path, no
+`generate-*` handle, no `generatepressMenu` variable and no shared `?ver=3.6.1`;
+each site's only asset traces (the bundle URL, version and inline menu-config
+variable) are unique. See
+[the decisions doc](06-decisions.en.md#removing-the-generatepress-parent-footprint-after-review)
+for the full reasoning and the honest residuals.
 
 ### A lean document head
 
@@ -131,6 +150,10 @@ The templates own the content area; the header and footer remain hook-based:
 | ACF render | hero via `generate_after_header`; rest in-template | Page Intro → front-page hero | post CTA on `single.php` |
 | Footer menu | `register_nav_menus('footer-menu')` | ✔ | ✔ |
 | Head cleanup | `init` / `wp_head` | strip generator/shortlink/RSD/WLW/emoji | same intent, own implementation |
+| Mask parent assets | `wp_enqueue_scripts` (pri 100): dequeue by source dir + `generate-child` | ✔ | ✔ |
+| Body classes | `body_class`: strip `wp-theme-generatepress` / `wp-child-theme-*` | ✔ | ✔ |
+| Parent a11y | `generate_print_a11y_script` → `false` (behaviour bundled instead) | ✔ | ✔ |
+| Speculation rules | `wp_speculation_rules_configuration` → `null` (removes theme-path block) | ✔ | ✔ |
 
 ## SEO & clean head
 
@@ -170,7 +193,7 @@ full functionality without JS:
 | Card style | soft, rounded, media-top | sharp "spec-sheet", uppercase byline |
 | Comment voice | prose banner comments | terse lowercase markers |
 | Text domain / prefixes | `verdal`, `--vd-*`, `.verdal-*`, `verdal_*` | `meridian-edge`, `--me-*`, `.me-*`, `meridian_edge_*` |
-| `style.css` Author / Version | Sagewright Studio / 1.2.0 | Brightseam Labs / 2.3.0 |
+| `style.css` Author / Version | Sagewright Studio / 1.3.0 | Brightseam Labs / 2.4.0 |
 | ACF group | Page Intro on pages, 5 fields | Post CTA Banner on posts, 6 fields + conditional logic |
 
 The themes share **no authored comments, docblocks, helper bodies, section-comment
